@@ -265,6 +265,16 @@ Frontmatter (mỗi giá trị là chuỗi trong nháy kép, ví dụ `tester: "L
 
 Phần thân có các mục: phạm vi, bảng test case kèm kết quả đề xuất, link bug, và mục `## Kết luận của tester`. Skill luôn để trống mục cuối. Chỉ tester điền, trên UI hoặc bằng tay.
 
+## `settings.local.json`
+
+Cài đặt riêng trên máy tester, ở thư mục gốc project. Không commit. Tạo và sửa bằng `npm run cli -- settings`.
+
+| Trường | Kiểu | Mặc định | Mô tả |
+| --- | --- | --- | --- |
+| `playwright.headless` | boolean | `true` | `true`: Playwright chạy ẩn. `false`: mở cửa sổ trình duyệt để xem. Áp dụng cho `capture`, `audit`, `check-session`, spec và regression. Lệnh `login` luôn mở cửa sổ |
+
+Thứ tự ưu tiên: cờ `--headed` hoặc `--headless` của lệnh, rồi biến môi trường `HEADLESS=true|false`, rồi file này.
+
 ## `auth/<feature>.json` và `auth/<feature>.meta.json`
 
 `auth/<feature>.json` là storageState của Playwright (khóa `cookies` và `origins`). Chứa token. Không in, không sao chép, không đưa vào report. agent-browser nạp qua `--state`.

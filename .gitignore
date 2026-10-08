@@ -13,3 +13,6 @@ playwright-report/
 
 # Bộ nhớ cục bộ của agent
 .claude/agent-memory/
+
+# Cài đặt riêng của từng máy (npm run cli -- settings)
+settings.local.json

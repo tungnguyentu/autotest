@@ -11,7 +11,7 @@ Lệnh:
   login --feature <f> [--start /path] [--wait-flag]
       Mở Chromium có giao diện để tester đăng nhập tay, rồi lưu auth/<f>.json.
       Bấm Enter để lưu. Với --wait-flag, tạo file auth/<f>.save cũng được.
-  check-session --feature <f> --url <url> [--headed]
+  check-session --feature <f> --url <url> [--headed | --headless]
       Nạp auth/<f>.json bằng Playwright, mở URL, báo có còn đăng nhập không.
   evidence-dir --feature <f>
       Tạo và in thư mục đợt test mới: <EVIDENCE_ROOT>/<YYYY-MM-DD>_<f>[_rN].
@@ -30,7 +30,7 @@ Lệnh:
       Ghi ai_result ({verdict, per_expected[]}) vào ai-run/<id>.json và đóng session agent-browser.
   validate-testcases --feature <f>
       Kiểm tra features/<f>/testcases.json theo schema, in thống kê và cảnh báo. Mã thoát 1 nếu sai schema.
-  capture --feature <f> --out <đợt>/ui-diff [--screen <key> ...] [--full-page] [--headed]
+  capture --feature <f> --out <đợt>/ui-diff [--screen <key> ...] [--full-page] [--headed | --headless]
       Chụp các screen trong feature.json (viewport của tính năng, phiên đăng nhập khi screen auth) vào
       <out>/<screen>/actual.png, sao ảnh Figma thành figma.png và ghi meta.json. Thiếu ảnh hoặc thiếu phiên chỉ là cảnh báo.
   compare --dir <đợt>/ui-diff/<screen> [--scale <n>] [--threshold 20] [--cell 16] [--cell-ratio 0.03] [--max-regions 15] [--pad 16]
@@ -38,11 +38,15 @@ Lệnh:
       Pixel diff chỉ khoanh vùng, không phải kết luận.
   feature-init --feature <f> --url <url> [--service <tên>] [--screen <key>] [--auth]
       Tạo features/<f>/feature.json từ URL (baseURL là origin, một screen theo đường dẫn). Không ghi đè.
-  audit --feature <f> [--run-dir <đợt>] [--screen <key> ...] [--viewport 1440x900 ...] [--headed]
+  audit --feature <f> [--run-dir <đợt>] [--screen <key> ...] [--viewport 1440x900 ...] [--headed | --headless]
       Kiểm tra giao diện không cần Figma: mỗi screen, mỗi viewport (mặc định desktop và mobile 390x844),
       mỗi theme trong feature.json (sáng, tối). Ghi <đợt>/ui-audit/<screen>/shots/, review/ (ảnh sáng và tối
       cạnh nhau để xem) và checks.json (tương phản, tràn ngang, ảnh, tiêu đề, link, console, request lỗi,
       nút đổi theme). Không có --run-dir thì tạo đợt mới. Chỉ đo, không kết luận.
+  settings [--headless true|false]
+      Xem hoặc đổi cài đặt trên máy này (settings.local.json, không commit).
+      --headless false: Playwright mở cửa sổ trình duyệt cho mọi lệnh chụp, đo và chạy spec.
+      Cờ --headed hoặc --headless của từng lệnh và biến HEADLESS=true|false ưu tiên hơn file này.
   run-spec --feature <f> --id <TC> [--run-dir <d>]
       Chạy tests/<f>/<TC>.spec.ts qua runner của tool, in log đã che credential và ghi kết quả vào <đợt>/playwright-last.json.
       Dùng lệnh này thay cho "npx playwright test". Mã thoát 2 khi spec fail.
@@ -51,6 +55,12 @@ Lệnh:
   help
       In trợ giúp này.
 `;
+
+/** `--headed` hoặc `--headless` trên dòng lệnh. Không có cờ nào thì theo settings.local.json. */
+function headedFlag(values: { headed?: boolean; headless?: boolean }): boolean | undefined {
+  if (values.headed && values.headless) throw new UsageError("Chỉ dùng một trong --headed và --headless.");
+  return values.headed ? true : values.headless ? false : undefined;
+}
 
 function requireFeature(value: string | undefined): string {
   if (!value) throw new UsageError("Thiếu --feature <tên tính năng>.");
@@ -84,12 +94,13 @@ async function main(argv: string[]): Promise<number> {
         options: {
           feature: { type: "string" },
           url: { type: "string" },
-          headed: { type: "boolean", default: false },
+          headed: { type: "boolean" },
+          headless: { type: "boolean" },
         },
       });
       if (!values.url) throw new UsageError("Thiếu --url <url>.");
       const { checkSession } = await import("./cli/check-session.ts");
-      const r = await checkSession({ feature: requireFeature(values.feature), url: values.url, headed: values.headed });
+      const r = await checkSession({ feature: requireFeature(values.feature), url: values.url, headed: headedFlag(values) });
       console.log(`URL yêu cầu : ${r.requestedUrl}`);
       console.log(`URL cuối    : ${r.finalUrl}`);
       console.log(`Tiêu đề     : ${r.title}`);
@@ -130,7 +141,8 @@ async function main(argv: string[]): Promise<number> {
           "run-dir": { type: "string" },
           screen: { type: "string", multiple: true },
           viewport: { type: "string", multiple: true },
-          headed: { type: "boolean", default: false },
+          headed: { type: "boolean" },
+          headless: { type: "boolean" },
         },
       });
       const feature = requireFeature(values.feature);
@@ -144,7 +156,7 @@ async function main(argv: string[]): Promise<number> {
       }
       const runDir = values["run-dir"] ? resolveEvidencePath(values["run-dir"], "--run-dir") : createRunDir(feature);
       console.log(`Thư mục đợt: ${runDir}`);
-      const results = await auditScreens({ feature, runDir, screens: values.screen, viewports, headed: values.headed });
+      const results = await auditScreens({ feature, runDir, screens: values.screen, viewports, headed: headedFlag(values) });
       let broken = 0;
       for (const r of results) {
         console.log(`\n== ${r.screen}: ${r.url}`);
@@ -178,6 +190,24 @@ async function main(argv: string[]): Promise<number> {
         console.log(`  Ảnh để xem: ${r.review_images.length} file trong ${path.join(runDir, "ui-audit", r.screen, "review")}`);
       }
       return broken ? 2 : 0;
+    }
+    case "settings": {
+      const { values } = parseArgs({ args: rest, options: { headless: { type: "string" } } });
+      const { readSettings, writeSettings, settingsPath, parseBool, resolveHeadless } = await import("./core/settings.ts");
+      const settings = readSettings();
+      if (values.headless !== undefined) {
+        try {
+          settings.playwright.headless = parseBool(values.headless, "--headless");
+        } catch (err) {
+          throw new UsageError((err as Error).message);
+        }
+        writeSettings(settings);
+        console.log(`Đã lưu ${path.relative(process.cwd(), settingsPath())}`);
+      }
+      console.log(JSON.stringify(settings, null, 2));
+      const effective = resolveHeadless(undefined);
+      console.log(`Playwright đang chạy: ${effective ? "ẩn (headless)" : "mở cửa sổ (headed)"}${process.env.HEADLESS?.trim() ? " theo biến HEADLESS" : ""}`);
+      return 0;
     }
     case "evidence-dir": {
       const { values } = parseArgs({ args: rest, options: { feature: { type: "string" } } });
@@ -298,7 +328,8 @@ async function main(argv: string[]): Promise<number> {
           out: { type: "string" },
           screen: { type: "string", multiple: true },
           "full-page": { type: "boolean", default: false },
-          headed: { type: "boolean", default: false },
+          headed: { type: "boolean" },
+          headless: { type: "boolean" },
         },
       });
       if (!values.out) throw new UsageError("Thiếu --out <đợt>/ui-diff.");
@@ -310,7 +341,7 @@ async function main(argv: string[]): Promise<number> {
         out,
         screens: values.screen,
         fullPage: values["full-page"],
-        headed: values.headed,
+        headed: headedFlag(values),
       });
       let failed = 0;
       for (const m of results) {

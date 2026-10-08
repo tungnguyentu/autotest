@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
+import { resolveHeadless } from "../core/settings.ts";
 import { readFeature } from "../core/feature-store.ts";
 import { authFile, publicUrl, type PathOptions } from "../core/paths.ts";
 
@@ -40,7 +41,7 @@ export async function checkSession(options: CheckSessionOptions): Promise<CheckS
     throw new Error(`--url phải cùng origin với baseURL (${new URL(feature.baseURL).origin}).`);
   }
 
-  const browser = await chromium.launch({ headless: !options.headed });
+  const browser = await chromium.launch({ headless: resolveHeadless(options.headed, options) });
   try {
     const context = await browser.newContext({ storageState: state, viewport: feature.viewport });
     const page = await context.newPage();

@@ -3,6 +3,7 @@ import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import { readFeature } from "./tool/core/feature-store.ts";
 import { assertFeatureName, authFile, featureEnvFile, nextRunDir } from "./tool/core/paths.ts";
+import { resolveHeadless } from "./tool/core/settings.ts";
 
 function fail(message: string): never {
   console.error(`[playwright.config] ${message}`);
@@ -56,6 +57,8 @@ export default defineConfig({
         ["json", { outputFile: path.join(runDir, "playwright-results.json") }],
       ],
   use: {
+    // settings.local.json hoặc HEADLESS=true|false. Cờ --headed của Playwright vẫn ưu tiên hơn.
+    headless: resolveHeadless(undefined),
     baseURL: cfg.baseURL,
     viewport: cfg.viewport,
     ...(hasState ? { storageState: state } : {}),

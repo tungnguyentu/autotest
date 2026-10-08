@@ -7,9 +7,10 @@
 
 ## Lệnh của tool
 - Mọi script gọi qua `npm run cli -- <lệnh>`. Không chạy file trong `tool/` trực tiếp, không tự viết script xử lý ảnh hay phiên
-- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
+- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `settings`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
 - Chạy spec Playwright chỉ bằng `npm run cli -- run-spec`. KHÔNG chạy `npx playwright test` trong shell của bạn: log và `playwright-results.json` chỉ được che credential khi đi qua lệnh này
 - Schema mọi file dùng chung: `docs/schemas.md`
+- Playwright chạy ẩn hay mở cửa sổ theo `settings.local.json`. Tester muốn xem trình duyệt: `npm run cli -- settings --headless false`, chạy ẩn lại: `--headless true`. Không tự đổi khi tester không yêu cầu
 
 ## Tính năng, môi trường, đăng nhập
 - Luôn xác định <feature> trước khi làm; cấu hình ở features/<feature>/feature.json

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chromium, type Browser } from "playwright";
+import { resolveHeadless } from "../core/settings.ts";
 import { readFeature, writeJsonAtomic } from "../core/feature-store.ts";
 import { authFile, featureDir, localIso, publicUrl, PROJECT_ROOT, type PathOptions } from "../core/paths.ts";
 import type { Feature, MaskBox, Meta } from "../core/schemas.ts";
@@ -118,7 +119,7 @@ export async function captureScreens(opts: CaptureOptions): Promise<Meta[]> {
   const unknown = keys.filter((k) => !feature.screens[k]);
   if (unknown.length) throw new Error(`Screen không có trong feature.json: ${unknown.join(", ")}`);
 
-  const browser = await chromium.launch({ headless: !opts.headed });
+  const browser = await chromium.launch({ headless: resolveHeadless(opts.headed, opts) });
   const abort = () => void browser.close().catch(() => {});
   opts.signal?.addEventListener("abort", abort, { once: true });
   const results: Meta[] = [];

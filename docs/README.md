@@ -86,6 +86,7 @@ Mọi lệnh chạy qua `npm run cli -- <lệnh>`.
 | `run-spec --feature <f> --id <TC> [--run-dir <d>]` | Chạy `tests/<f>/<TC>.spec.ts` qua runner của tool: log in ra đã che credential, `playwright-results.json` được che sau lần chạy, kết quả vào `<đợt>/playwright-last.json`. Mã thoát 0 là pass, 2 là fail. Skill dùng lệnh này thay cho `npx playwright test` |
 | `feature-init --feature <f> --url <url> [--service <tên>] [--screen <key>] [--auth]` | Tạo `features/<f>/feature.json` từ URL, không cần UI. Không ghi đè |
 | `audit --feature <f> [--run-dir <đợt>] [--screen <key> ...] [--viewport 1440x900 ...] [--headed]` | Kiểm tra giao diện không cần Figma, theo theme trong `feature.json` và viewport (mặc định desktop và mobile 390x844). Ghi `<đợt>/ui-audit/<screen>/` gồm `checks.json`, `shots/`, `review/`. Xem [schemas.md](./schemas.md) |
+| `settings [--headless true\|false]` | Xem hoặc đổi cài đặt trên máy này, lưu ở `settings.local.json` (không commit). `--headless false`: Playwright mở cửa sổ trình duyệt cho `capture`, `audit`, `check-session`, `run-spec` và regression. Cờ `--headed` hoặc `--headless` của từng lệnh, rồi biến `HEADLESS=true\|false`, ưu tiên hơn file |
 | `validate-testcases --feature <f>` | Kiểm tra `testcases.json` theo schema, in thống kê và cảnh báo |
 | `help` | In trợ giúp |
 

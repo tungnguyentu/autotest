@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { resolveHeadless } from "../core/settings.ts";
 import { readFeature, writeJsonAtomic } from "../core/feature-store.ts";
 import { authFile, localIso, publicUrl, PROJECT_ROOT, type PathOptions } from "../core/paths.ts";
 import { readPng, stitchVertical, writeSideBySideSegments } from "../core/png-tools.ts";
@@ -235,7 +236,7 @@ export async function auditScreens(opts: AuditOptions): Promise<AuditResult[]> {
   const t = feature.theme;
   const themes: ThemeName[] = t && t.method !== "none" ? ["light", "dark"] : ["default"];
 
-  const browser = await chromium.launch({ headless: !opts.headed });
+  const browser = await chromium.launch({ headless: resolveHeadless(opts.headed, opts) });
   const results: AuditResult[] = [];
   try {
     for (const key of keys) {

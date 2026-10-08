@@ -20,6 +20,8 @@ Tài liệu này dành cho người không đọc code. Làm theo thứ tự. M�
 
 Cổng 4173 bận thì `npm start` in ra tiến trình đang giữ cổng. Dừng tiến trình đó rồi chạy lại. Tool không tự đổi cổng.
 
+6. Muốn nhìn thấy trình duyệt khi tool chụp, đo hay chạy spec: `npm run cli -- settings --headless false`. Chạy ẩn lại (nhanh hơn): `npm run cli -- settings --headless true`. Cũng có thể nói với Claude: "chạy có mở trình duyệt". Cài đặt lưu ở `settings.local.json`, chỉ có trên máy bạn.
+
 ## 2. Bảo mật: đọc trước khi làm
 
 - `features/<tính năng>/.env` chứa mật khẩu. `auth/` chứa phiên đăng nhập. `evidence/` có thể chứa ảnh có dữ liệu thật.
