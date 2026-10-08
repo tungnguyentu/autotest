@@ -8,7 +8,7 @@
 ## Tester chỉ chat
 - Không có giao diện web. Tester không gõ lệnh. Bạn chạy mọi lệnh thay tester và trả lời bằng tiếng Việt, ngắn
 - Tester hỏi "đang tới đâu", "làm gì tiếp": `npm run cli -- status --feature <f>` rồi nói lại dòng "Việc tiếp theo"
-- Chưa có `node_modules/`: chạy `npm install` và `npx playwright install chromium` trước khi làm việc khác
+- Chưa có `node_modules/`: chạy `npm ci` và `npx playwright install chromium` trước khi làm việc khác. Dùng `npm ci`, không dùng `npm install` (lệnh này sửa `package-lock.json` và gây conflict khi cập nhật tool)
 - Tester nói "mở trình duyệt", "cho xem trình duyệt", "chạy có giao diện": `npm run cli -- settings --headless false`.
   Nói "chạy ẩn", "tắt trình duyệt": `--headless true`. Áp dụng cho Playwright và agent-browser. Session agent-browser
   đang mở giữ chế độ cũ: đóng session rồi mở lại. Không tự đổi khi tester không yêu cầu
@@ -21,6 +21,19 @@
   4. Kiểm tra: `npm run cli -- check-session --feature <f> --url <baseURL + path>`
 - Tester kéo ảnh Figma (PNG export 1x) vào chat: chép vào `features/<f>/figma/<screen>.png` (hỏi screen nếu chưa rõ), rồi `npm run cli -- ui-diff --feature <f> --screen <screen>`
 - Tester gửi mật khẩu hay OTP vào chat: không dùng, không lặp lại, nhắc tester đổi mật khẩu và đăng nhập trên cửa sổ trình duyệt
+
+## Cập nhật tool, tránh conflict
+- Máy tester chỉ nhận cập nhật, không sửa file của tool: `tool/`, `.claude/`, `CLAUDE.md`, `docs/`, `plans/`, `package.json`,
+  `package-lock.json`, `playwright.config.ts`, `tsconfig.json`, `.gitignore`. Tester muốn đổi tool: ghi lại yêu cầu, nhờ gửi cho người phát triển
+- Dữ liệu của tester nằm trong thư mục git bỏ qua: `features/`, `tests/`, `evidence/`, `auth/`, `settings.local.json`, `agent-browser.json`.
+  Ghi chú riêng của tester cho Claude: `CLAUDE.local.md` (cũng bị bỏ qua)
+- Không chạy `git add`, `git commit`, `git push`, `git stash`, `git reset`, `git checkout -- <file>` trên máy tester
+- Tester nói "cập nhật tool":
+  1. `git status --porcelain --untracked-files=no`. Có file của tool bị sửa: dừng, báo tên file cho tester, không tự xóa thay đổi
+  2. `git pull --ff-only`. Lỗi thì báo nguyên văn cho tester, không ép pull
+  3. `npm ci`, rồi `npx playwright install chromium`
+  4. Báo bản mới: `git log -1 --format="%h %s (%ad)" --date=short`
+- Mở phiên làm việc mới: chạy `git status --porcelain --untracked-files=no`. Có file của tool bị sửa thì nhắc tester trước khi làm việc khác
 
 ## Quyết định của tester qua chat
 Các lệnh dưới đây ghi quyết định của tester. Chỉ chạy khi tester nói rõ trong chat, đúng mã và đúng ý. Câu mơ hồ ("ok", "được")

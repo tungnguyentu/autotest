@@ -77,10 +77,6 @@ describe("feature.json", () => {
     const f = parseFeature(feature);
     assert.deepEqual(f.screens.home, { path: "/", auth: true, mask: [], scale: 1, wait_for: [] });
   });
-  it("nhận file features/staging/feature.json của project", () => {
-    const raw = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "features/staging/feature.json"), "utf8"));
-    assert.equal(parseFeature(raw).feature, "staging");
-  });
   it("từ chối baseURL sai, path thiếu dấu /, viewport âm", () => {
     assert.throws(() => parseFeature({ ...feature, baseURL: "not a url" }), SchemaError);
     assert.throws(() => parseFeature({ ...feature, feature: "staging_r2" }), SchemaError); // trùng tên đợt vòng 2 của "staging"

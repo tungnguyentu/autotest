@@ -14,11 +14,11 @@ Cách dùng: xem mục [Cách dùng](#cách-dùng).
 ## Cài đặt
 
 ```bash
-npm install
+npm ci
 npx playwright install chromium
 ```
 
-Cần Node 26 trở lên. Không cần Python. Khi tester chat, Claude tự cài nếu chưa có `node_modules/`.
+Cần Node 26 trở lên. Không cần Python. Khi tester chat, Claude tự cài nếu chưa có `node_modules/`. Dùng `npm ci`, không dùng `npm install`, để `package-lock.json` trên máy tester không đổi.
 
 ## Cách dùng
 
@@ -47,7 +47,24 @@ Tool không có tiến trình nền lâu dài. Ngoại lệ duy nhất là cửa
 | `tests/__screenshots__/<feature>/` | Ảnh baseline của Playwright |
 | `$EVIDENCE_ROOT/<YYYY-MM-DD>_<feature>[_rN]/` | Evidence của một đợt test. Mặc định `./evidence` |
 
-Project dùng git. `.gitignore` loại `auth/`, `features/*/.env`, `evidence/`, `settings.local.json` và `agent-browser.json`. Tool không sao chép và không in `features/*/.env` và `auth/`.
+Project dùng git. Tool không sao chép và không in `features/*/.env` và `auth/`.
+
+## Phát hành bản mới, tránh conflict cho tester
+
+Nhiều tester cùng `git pull` repo này. Repo chỉ chứa tool. Dữ liệu của tester nằm trong thư mục git bỏ qua, nên pull không bao giờ chạm vào dữ liệu đó.
+
+| Git theo dõi (chỉ người phát triển sửa) | Git bỏ qua (dữ liệu trên từng máy tester) |
+| --- | --- |
+| `tool/`, `.claude/`, `CLAUDE.md`, `docs/`, `plans/`, `package.json`, `package-lock.json`, `playwright.config.ts`, `tsconfig.json`, `.gitignore` | `features/`, `tests/`, `evidence/`, `auth/`, `settings.local.json`, `agent-browser.json`, `CLAUDE.local.md`, `.claude/settings.local.json`, `node_modules/` |
+
+Khi phát hành:
+
+- Không commit file vào `features/` hay `tests/`. Tính năng mẫu hoặc dữ liệu test của tool đặt trong `tool/**/__tests__/`.
+- Cập nhật `package-lock.json` cùng `package.json` trong một commit. Tester cài bằng `npm ci`, lệnh này đọc đúng lock file và không sửa nó.
+- Đổi schema của file trong `features/`, `tests/`, `evidence/`: giữ đọc được file cũ (trường mới phải tùy chọn hoặc có mặc định). Không đọc được thì thêm lệnh chuyển đổi và ghi trong commit.
+- Push lên `master` theo kiểu fast-forward, không viết lại lịch sử đã push (`push -f`). Tester pull bằng `git pull --ff-only`.
+
+Tester nói "cập nhật tool" thì Claude làm theo mục "Cập nhật tool, tránh conflict" trong [CLAUDE.md](../CLAUDE.md): kiểm tra file của tool có bị sửa không, `git pull --ff-only`, `npm ci`.
 
 ## Lệnh
 

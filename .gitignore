@@ -17,3 +17,9 @@ playwright-report/
 # Cài đặt riêng của từng máy (npm run cli -- settings)
 settings.local.json
 agent-browser.json
+
+# Dữ liệu của tester: mỗi máy một bản, không commit, để git pull không bao giờ conflict
+features/
+tests/
+CLAUDE.local.md
+.claude/settings.local.json
