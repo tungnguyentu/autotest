@@ -1,0 +1,9 @@
+{
+  "feature": "staging",
+  "service": "Staging (thay bằng tên service thật)",
+  "baseURL": "https://REPLACE-ME.example.com",
+  "viewport": { "width": 1440, "height": 900 },
+  "screens": {
+    "home": { "path": "/", "auth": true, "mask": [], "scale": 1, "wait_for": [] }
+  }
+}

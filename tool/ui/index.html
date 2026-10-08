@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tool AI Testing</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"></header>
+<main>
+  <h1>Tính năng</h1>
+  <div id="status" class="status" role="status"></div>
+  <div class="row"><button id="toggle-create" class="primary">Tạo tính năng</button></div>
+
+  <form id="create" hidden>
+    <div class="grid2">
+      <div>
+        <label for="c-feature">Tên tính năng (chữ, số, - và _)</label>
+        <input id="c-feature" type="text" required pattern="[A-Za-z0-9][A-Za-z0-9_\-]*" placeholder="vd: dang-nhap">
+      </div>
+      <div>
+        <label for="c-service">Service</label>
+        <input id="c-service" type="text" required placeholder="Tên service hiển thị">
+      </div>
+    </div>
+    <label for="c-url">Địa chỉ môi trường test (baseURL)</label>
+    <input id="c-url" type="url" required placeholder="https://staging.example.com">
+    <div class="row">
+      <span>Viewport</span>
+      <input id="c-w" type="number" min="1" value="1440" aria-label="Chiều rộng"> x
+      <input id="c-h" type="number" min="1" value="900" aria-label="Chiều cao">
+      <button type="submit" class="primary" id="c-submit">Tạo</button>
+    </div>
+  </form>
+
+  <table id="list">
+    <thead>
+      <tr>
+        <th>Tính năng</th><th>Service</th><th>baseURL</th><th>Test case</th><th>Phiên đăng nhập</th><th>Đợt gần nhất</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</main>
+<script src="app.js"></script>
+<script>
+  const { h, api, status, action, watch, header, fmtDate, $ } = App;
+  header("Danh sách tính năng");
+  const st = status();
+
+  function counts(tc) {
+    if (tc.error) return h("span", { class: "error" }, "testcases.json lỗi");
+    if (!tc.exists) return h("span", { class: "muted" }, "chưa có");
+    const parts = Object.entries(tc.counts).filter(([, n]) => n > 0).map(([s, n]) => `${s}: ${n}`);
+    return `${tc.total} (${parts.join(", ")})`;
+  }
+
+  async function load() {
+    try {
+      const rows = await api("GET", "/api/features");
+      const body = $("#list tbody");
+      if (!rows.length) {
+        body.replaceChildren(h("tr", {}, h("td", { colSpan: 6, class: "muted" }, "Chưa có tính năng. Bấm \"Tạo tính năng\".")));
+        return;
+      }
+      body.replaceChildren(
+        ...rows.map((r) =>
+          r.error
+            ? h("tr", {}, h("td", {}, r.feature), h("td", { colSpan: 5, class: "error" }, r.error.split("\n")[0]))
+            : h(
+                "tr",
+                {},
+                h("td", {}, h("a", { href: `feature.html?f=${encodeURIComponent(r.feature)}` }, r.feature)),
+                h("td", {}, r.service),
+                h("td", {}, r.baseURL),
+                h("td", {}, counts(r.testcases)),
+                h("td", {}, r.session ? `Đã lưu ${fmtDate(r.session.saved_at)}` : h("span", { class: "muted" }, "Chưa có")),
+                h("td", {}, r.latest_run ? h("a", { href: `run.html?f=${encodeURIComponent(r.feature)}&run=${encodeURIComponent(r.latest_run)}` }, r.latest_run) : h("span", { class: "muted" }, "Chưa có")),
+              ),
+        ),
+      );
+    } catch (err) {
+      st.fail(err);
+    }
+  }
+
+  $("#toggle-create").addEventListener("click", () => {
+    const f = $("#create");
+    f.hidden = !f.hidden;
+    if (!f.hidden) $("#c-feature").focus();
+  });
+
+  $("#create").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const name = $("#c-feature").value.trim();
+    const ok = await action($("#c-submit"), st, `Đã tạo tính năng ${name}`, async () => {
+      await api("POST", "/api/features", {
+        feature: name,
+        service: $("#c-service").value.trim(),
+        baseURL: $("#c-url").value.trim(),
+        viewport: { width: Number($("#c-w").value), height: Number($("#c-h").value) },
+      });
+    });
+    if (ok) location.href = `feature.html?f=${encodeURIComponent(name)}`;
+  });
+
+  watch((p) => p.startsWith("features/") || p.startsWith("auth/") || p.startsWith("evidence/"), load);
+  load();
+</script>
+</body>
+</html>

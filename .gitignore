@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+
+# Phiên đăng nhập và credential: không bao giờ commit
+auth/
+features/*/.env
+features/*/.env.*
+
+# Kết quả chạy test
+evidence/
+test-results/
+playwright-report/
+
+# Bộ nhớ cục bộ của agent
+.claude/agent-memory/

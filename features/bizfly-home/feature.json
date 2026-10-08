@@ -1,0 +1,9 @@
+{
+  "feature": "bizfly-home",
+  "service": "Bizfly Cloud homepage (staging)",
+  "baseURL": "https://staging-home.bizflycloud.vn",
+  "viewport": { "width": 1440, "height": 900 },
+  "screens": {
+    "home": { "path": "/", "auth": false, "mask": [], "scale": 1, "wait_for": [] }
+  }
+}

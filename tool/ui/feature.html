@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tính năng - Tool AI Testing</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"></header>
+<main>
+  <h1 id="title">Tính năng</h1>
+  <div id="status" class="status" role="status"></div>
+  <div id="next-step"></div>
+  <p><a id="to-testcases" href="#">Mở trang test case</a></p>
+
+  <h2 id="config">Cấu hình</h2>
+  <form id="form">
+    <div class="grid2">
+      <div><label for="f-service">Service</label><input id="f-service" type="text" required></div>
+      <div><label for="f-url">baseURL</label><input id="f-url" type="url" required></div>
+    </div>
+    <div class="row">
+      <span>Viewport</span>
+      <input id="f-w" type="number" min="1" aria-label="Chiều rộng"> x
+      <input id="f-h" type="number" min="1" aria-label="Chiều cao">
+      <span class="muted">Cũng là kích thước ảnh Figma cần export.</span>
+    </div>
+    <label>Màn hình (screens)</label>
+    <table id="screens">
+      <thead><tr><th>Tên</th><th>Path</th><th>Cần đăng nhập</th><th>Mask (mỗi selector một dòng)</th><th>Scale</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="row">
+      <button type="button" id="add-screen">Thêm màn hình</button>
+      <button type="submit" class="primary" id="save">Lưu cấu hình</button>
+    </div>
+  </form>
+
+  <h2 id="usecases">Use case</h2>
+  <div id="usecase-list"></div>
+  <div class="row">
+    <input id="upload" type="file" accept=".md,.docx,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple aria-label="Chọn file use case">
+    <button id="upload-btn">Tải lên</button>
+  </div>
+  <p class="muted">Nhận file Markdown (.md) hoặc Word (.docx). File Word được chuyển sang .md để Claude Code đọc, ảnh trong file tách ra thư mục riêng, file gốc giữ nguyên. Mở file .md xem lại bảng và ảnh trước khi sinh test case.</p>
+  <div id="upload-warn"></div>
+
+  <h2 id="login">Đăng nhập</h2>
+  <p id="session-info"></p>
+  <div class="row">
+    <button id="login-start">Mở browser để đăng nhập</button>
+    <button id="login-save" class="primary">Lưu phiên</button>
+  </div>
+  <p id="login-hint" class="muted"></p>
+  <details id="login-log-box"><summary>Nhật ký tiến trình đăng nhập</summary><pre id="login-log"></pre></details>
+
+  <h2 id="runs">Đợt test</h2>
+  <div class="row"><button id="new-run">Tạo đợt mới</button></div>
+  <div id="run-list"></div>
+</main>
+<script src="app.js"></script>
+<script src="next-step.js"></script>
+<script>
+  const { h, api, status, action, watch, header, fmtDate, param, $ } = App;
+  const f = param("f");
+  const base = `/api/features/${encodeURIComponent(f)}`;
+  const st = status();
+  header(`Tính năng / ${f}`);
+  $("#title").textContent = `Tính năng: ${f}`;
+  $("#to-testcases").href = `testcases.html?f=${encodeURIComponent(f)}`;
+
+  let formDirty = false;
+  let overview = null;
+
+  // ---- cấu hình ----
+  function screenRow(name = "", s = {}) {
+    const row = h(
+      "tr",
+      {},
+      h("td", {}, h("input", { type: "text", class: "s-name", value: name, "aria-label": "Tên màn hình", required: true })),
+      h("td", {}, h("input", { type: "text", class: "s-path", value: s.path || "/", "aria-label": "Path", required: true })),
+      h("td", {}, h("input", { type: "checkbox", class: "s-auth", checked: !!s.auth, "aria-label": "Cần đăng nhập" })),
+      h("td", {}, h("textarea", { class: "s-mask", rows: 2, "aria-label": "Mask" }, (s.mask || []).join("\n"))),
+      h("td", {}, h("input", { type: "number", class: "s-scale", min: "1", step: "any", value: s.scale || 1, "aria-label": "Scale" })),
+      h("td", {}, h("button", { type: "button", class: "small", onclick: () => { row.remove(); formDirty = true; } }, "Xóa")),
+    );
+    row.dataset.waitFor = JSON.stringify(s.wait_for || []); // wait_for chỉ sửa bằng tay trong file, giữ nguyên khi lưu
+    return row;
+  }
+
+  function fillForm(cfg) {
+    $("#f-service").value = cfg.service;
+    $("#f-url").value = cfg.baseURL;
+    $("#f-w").value = cfg.viewport.width;
+    $("#f-h").value = cfg.viewport.height;
+    $("#screens tbody").replaceChildren(...Object.entries(cfg.screens).map(([n, s]) => screenRow(n, s)));
+    formDirty = false;
+  }
+
+  function readForm() {
+    const screens = {};
+    for (const row of $("#screens tbody").children) {
+      const name = $(".s-name", row).value.trim();
+      if (name in screens) throw new Error(`Tên màn hình bị trùng: ${name}`);
+      screens[name] = {
+        path: $(".s-path", row).value.trim(),
+        auth: $(".s-auth", row).checked,
+        mask: $(".s-mask", row).value.split("\n").map((x) => x.trim()).filter(Boolean),
+        scale: Number($(".s-scale", row).value),
+        wait_for: JSON.parse(row.dataset.waitFor),
+      };
+    }
+    return {
+      feature: f,
+      service: $("#f-service").value.trim(),
+      baseURL: $("#f-url").value.trim(),
+      viewport: { width: Number($("#f-w").value), height: Number($("#f-h").value) },
+      screens,
+    };
+  }
+
+  $("#form").addEventListener("input", () => (formDirty = true));
+  $("#add-screen").addEventListener("click", () => {
+    $("#screens tbody").append(screenRow());
+    formDirty = true;
+  });
+  $("#form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    await action($("#save"), st, "Đã lưu cấu hình", async () => {
+      await api("PUT", base, readForm());
+      formDirty = false;
+      await load(false);
+    });
+  });
+
+  // ---- use case ----
+  function renderUsecases(list) {
+    $("#usecase-list").replaceChildren(
+      list.length
+        ? h(
+            "table",
+            {},
+            h("thead", {}, h("tr", {}, h("th", {}, "File"), h("th", {}, "Nguồn"), h("th", { class: "num" }, "Kích thước"), h("th", {}, "Sửa lần cuối"))),
+            h(
+              "tbody",
+              {},
+              list.map((u) =>
+                h(
+                  "tr",
+                  {},
+                  h("td", {}, u.name),
+                  h("td", {}, u.source ? `${u.source}${u.images ? `, ${u.images} ảnh` : ""}` : "Markdown"),
+                  h("td", { class: "num" }, `${u.size} byte`),
+                  h("td", {}, fmtDate(u.mtime)),
+                ),
+              ),
+            ),
+          )
+        : h("p", { class: "muted" }, "Chưa có use case."),
+    );
+  }
+
+  $("#upload-btn").addEventListener("click", async () => {
+    const files = [...$("#upload").files];
+    if (!files.length) return st.fail(new Error("Chưa chọn file."));
+    await action($("#upload-btn"), st, `Đã tải lên ${files.length} file`, async () => {
+      const notes = [];
+      $("#upload-warn").replaceChildren();
+      for (const file of files) {
+        if (/\.docx$/i.test(file.name)) {
+          const r = await api("POST", `${base}/usecases/docx?name=${encodeURIComponent(file.name)}`, file);
+          notes.push(`${file.name} -> ${r.converted}${r.images ? `, ${r.images} ảnh` : ""}`);
+          r.warnings.forEach((w) => notes.push(`${file.name}: ${w}`));
+        } else if (/\.md$/i.test(file.name)) {
+          await api("POST", `${base}/usecases`, { name: file.name, content: await file.text() });
+        } else {
+          throw new Error(`"${file.name}" không phải .md hoặc .docx. File .doc cũ: mở bằng Word, lưu lại dạng .docx.`);
+        }
+      }
+      if (notes.length) $("#upload-warn").replaceChildren(h("ul", { class: "muted" }, notes.map((n) => h("li", {}, n))));
+      $("#upload").value = "";
+      await load(false);
+    });
+  });
+
+  // ---- đăng nhập ----
+  let pollTimer;
+  async function loadLogin() {
+    const s = await api("GET", `${base}/login`);
+    $("#session-info").textContent = s.session
+      ? `Đã lưu phiên lúc ${fmtDate(s.session.saved_at)}. Trang cuối: ${s.session.final_url || "(không rõ)"}`
+      : "Chưa có phiên đăng nhập.";
+    $("#login-start").disabled = s.running;
+    $("#login-save").disabled = !s.running;
+    $("#login-hint").textContent = s.running
+      ? "Đăng nhập xong trong cửa sổ browser vừa mở (SSO, OTP, captcha), rồi bấm \"Lưu phiên\"."
+      : s.exit_code != null && s.exit_code !== 0
+        ? "Tiến trình đăng nhập đã dừng với lỗi. Xem nhật ký bên dưới."
+        : "";
+    $("#login-log").textContent = s.log.join("\n");
+    $("#login-log-box").hidden = s.log.length === 0;
+    clearTimeout(pollTimer);
+    if (s.running) pollTimer = setTimeout(() => loadLogin().catch(st.fail), 2000);
+  }
+
+  $("#login-start").addEventListener("click", () =>
+    action($("#login-start"), st, "Đã mở browser", async () => {
+      await api("POST", `${base}/login/start`);
+      await loadLogin();
+    }),
+  );
+  $("#login-save").addEventListener("click", () =>
+    action($("#login-save"), st, "Đã gửi lệnh lưu phiên", async () => {
+      await api("POST", `${base}/login/save`);
+      await loadLogin();
+    }),
+  );
+
+  // ---- đợt test ----
+  function renderRuns(runs) {
+    $("#run-list").replaceChildren(
+      runs.length
+        ? h(
+            "table",
+            {},
+            h("thead", {}, h("tr", {}, h("th", {}, "Đợt"), h("th", {}, "AI run"), h("th", {}, "UI diff"), h("th", {}, "summary.md"))),
+            h(
+              "tbody",
+              {},
+              runs.map((r) =>
+                h(
+                  "tr",
+                  {},
+                  h("td", {}, h("a", { href: `run.html?f=${encodeURIComponent(f)}&run=${encodeURIComponent(r.name)}` }, r.name)),
+                  h("td", {}, r.ai_run_ids.length),
+                  h("td", {}, r.ui_diff_screens.length),
+                  h("td", {}, r.has_summary ? "có" : "chưa"),
+                ),
+              ),
+            ),
+          )
+        : h("p", { class: "muted" }, "Chưa có đợt test."),
+    );
+  }
+
+  $("#new-run").addEventListener("click", async () => {
+    let name;
+    const ok = await action($("#new-run"), st, "Đã tạo đợt mới", async () => {
+      name = (await api("POST", `${base}/runs`)).name;
+    });
+    if (ok) location.href = `run.html?f=${encodeURIComponent(f)}&run=${encodeURIComponent(name)}`;
+  });
+
+  // ---- tải dữ liệu ----
+  async function load(refreshForm = true) {
+    try {
+      overview = await api("GET", `${base}/overview`);
+      NextStep.mount($("#next-step"), overview);
+      if (refreshForm && !formDirty) fillForm(overview.feature);
+      renderUsecases(overview.usecases);
+      renderRuns(overview.runs);
+      await loadLogin();
+    } catch (err) {
+      st.fail(err);
+    }
+  }
+
+  watch((p) => p.startsWith(`features/${f}/`) || p === `auth/${f}.meta.json` || p.startsWith("evidence/"), () => load());
+  load();
+</script>
+</body>
+</html>

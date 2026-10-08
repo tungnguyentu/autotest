@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đợt test - Tool AI Testing</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"></header>
+<main>
+  <h1 id="title">Đợt test</h1>
+  <div id="status" class="status" role="status"></div>
+  <div id="next-step"></div>
+  <div id="overview"></div>
+
+  <h2>Tổng kết đợt (summary.md)</h2>
+  <div class="grid2">
+    <div><label for="s-tester">Tester</label><input id="s-tester" type="text"></div>
+    <div><label for="s-build">Build / commit được test</label><input id="s-build" type="text"></div>
+  </div>
+  <label for="s-conclusion">Kết luận của tester</label>
+  <textarea id="s-conclusion" rows="8" placeholder="Tester điền kết luận. Skill và tool không viết thay mục này."></textarea>
+  <div class="row">
+    <button id="s-save" class="primary">Lưu summary.md</button>
+    <button id="s-gen">Sinh lại từ dữ liệu của đợt</button>
+    <span id="s-state" class="muted"></span>
+  </div>
+  <details><summary>Xem nội dung summary.md</summary><pre id="s-md"></pre></details>
+
+  <!-- Chỗ nối cho các phase sau: đăng ký window.runSlots.<tên> = (container, run) => void -->
+  <section class="slot" data-slot="ai-run">
+    <h2>AI chạy thử</h2><div class="slot-body"><p class="placeholder">Đang tải...</p></div>
+  </section>
+  <section class="slot" data-slot="playwright">
+    <h2>Playwright</h2><div class="slot-body"><p class="placeholder">Đang tải...</p></div>
+  </section>
+  <section class="slot" id="ui-diff" data-slot="ui-diff">
+    <h2>So UI với Figma</h2><div class="slot-body"><p class="placeholder">Đang tải...</p></div>
+  </section>
+</main>
+<script>window.runSlots = window.runSlots || {};</script>
+<script src="app.js"></script>
+<script src="next-step.js"></script>
+<script src="ai-run-viewer.js"></script>
+<script src="playwright-panel.js"></script>
+<script src="heal-panel.js"></script>
+<script src="ui-diff-viewer.js"></script>
+<script>
+  const { h, api, status, action, watch, header, param, $ } = App;
+  const f = param("f");
+  const run = param("run");
+  const base = `/api/features/${encodeURIComponent(f)}`;
+  const runBase = `${base}/runs/${encodeURIComponent(run)}`;
+  const st = status();
+  header(`Tính năng / ${f} / ${run}`);
+  $("#title").textContent = `Đợt test: ${run}`;
+  $("#overview").before(h("p", {}, h("a", { href: `feature.html?f=${encodeURIComponent(f)}` }, "Về trang tính năng"), " · ", h("a", { href: `testcases.html?f=${encodeURIComponent(f)}` }, "Test case")));
+
+  let dirty = false;
+  for (const id of ["s-tester", "s-build", "s-conclusion"]) $(`#${id}`).addEventListener("input", () => (dirty = true));
+
+  function renderSummary(s) {
+    $("#s-md").textContent = s.markdown;
+    $("#s-state").textContent = s.exists ? "" : "summary.md chưa được ghi. Nội dung bên dưới là bản xem trước.";
+    if (dirty) return;
+    $("#s-tester").value = s.front ? s.front.tester : "";
+    $("#s-build").value = s.front ? s.front.build : "";
+    $("#s-conclusion").value = s.conclusion;
+  }
+
+  function renderOverview(r) {
+    const rows = [
+      ["AI run", r.ai_runs.length ? r.ai_runs.map((a) => `${a.id}: ${a.verdict || "chưa đánh giá"}`).join("; ") : "Chưa có"],
+      ["UI diff", r.ui_diff_screens.length ? r.ui_diff_screens.join(", ") : "Chưa có"],
+      ["Playwright report", r.has_playwright_report ? "Có" : "Chưa có"],
+      ["summary.md", r.has_summary ? "Đã ghi" : "Chưa ghi"],
+    ];
+    $("#overview").replaceChildren(
+      h("table", {}, h("tbody", {}, rows.map(([k, v]) => h("tr", {}, h("th", {}, k), h("td", {}, v))))),
+      ...(r.problems.length ? [h("div", { class: "banner error" }, r.problems.map((p) => h("div", {}, p)))] : []),
+    );
+  }
+
+  async function load() {
+    try {
+      const [r, overview] = await Promise.all([api("GET", runBase), api("GET", `${base}/overview`)]);
+      NextStep.mount($("#next-step"), overview);
+      renderOverview(r);
+      renderSummary(r.summary);
+      for (const [name, render] of Object.entries(window.runSlots)) {
+        const body = $(`section[data-slot="${name}"] .slot-body`);
+        if (body) render(body, r, { feature: f, run });
+      }
+    } catch (err) {
+      st.fail(err);
+    }
+  }
+
+  $("#s-save").addEventListener("click", () =>
+    action($("#s-save"), st, "Đã lưu summary.md", async () => {
+      const s = await api("PUT", `${runBase}/summary`, {
+        tester: $("#s-tester").value.trim(),
+        build: $("#s-build").value.trim(),
+        conclusion: $("#s-conclusion").value,
+      });
+      dirty = false;
+      renderSummary(s);
+    }),
+  );
+  $("#s-gen").addEventListener("click", () =>
+    action($("#s-gen"), st, "Đã sinh lại summary.md (giữ nguyên kết luận)", async () => {
+      renderSummary(await api("POST", `${runBase}/summary/generate`));
+    }),
+  );
+
+  watch((p) => p.startsWith("evidence/") && p.includes(run), load);
+  watch((p) => p === `features/${f}/testcases.json`, load);
+  load();
+</script>
+</body>
+</html>

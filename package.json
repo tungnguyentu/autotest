@@ -1,0 +1,36 @@
+{
+  "name": "automation-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tool AI Testing cho tester: quản lý tính năng, test case, evidence, Playwright",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "start": "tsx tool/server.ts",
+    "cli": "tsx tool/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"tool/**/__tests__/*.test.ts\""
+  },
+  "dependencies": {
+    "@playwright/test": "^1.63.0",
+    "chokidar": "^4.0.3",
+    "express": "^5.2.1",
+    "mammoth": "^1.13.0",
+    "pixelmatch": "^8.0.0",
+    "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.4",
+    "@types/pngjs": "^6.0.5",
+    "@types/turndown": "^5.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
