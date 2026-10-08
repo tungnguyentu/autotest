@@ -230,17 +230,17 @@ export function bugCount(state: ScreenState): number {
 /** Lý do chưa tạo được baseline. Mảng rỗng nghĩa là đủ điều kiện. Còn mục "bug" thì chặn. "cần xem" tính là đã quyết định. */
 export function baselineBlockers(state: ScreenState, feature: string, spec: string | null, runnerBusy: boolean): string[] {
   const out: string[] = [];
-  if (!spec) out.push(`Chưa có spec trong tests/${feature}/ dùng toHaveScreenshot('${state.screen}.png'). Viết spec trước (chạy /to-playwright hoặc viết tay).`);
-  if (!state.metrics) out.push("Chưa có kết quả so ảnh. Bấm \"Chụp và so\" trước.");
-  if (!state.report) out.push(`Chưa có report.md. Chạy /ui-check ${feature} ${state.screen} trong Claude Code.`);
-  else if (state.report.stale) out.push(`report.md cũ hơn lần so gần nhất. Chạy lại /ui-check ${feature} ${state.screen}.`);
-  else if (state.decisions_stale) out.push("report.md đã đổi sau khi tester lưu quyết định, cần quyết định lại cho từng mục rồi bấm \"Lưu quyết định\".");
-  else if (!state.decisions) out.push("Tester chưa lưu quyết định. Chọn bug, chấp nhận hoặc cần xem cho từng mục rồi bấm \"Lưu quyết định\".");
+  if (!spec) out.push(`Chưa có spec trong tests/${feature}/ dùng toHaveScreenshot('${state.screen}.png'). Viết spec trước (skill to-playwright hoặc viết tay).`);
+  if (!state.metrics) out.push("Chưa có kết quả so ảnh. Chạy lệnh ui-diff trước.");
+  if (!state.report) out.push(`Chưa có report.md. Chạy skill ui-check cho ${feature} ${state.screen}.`);
+  else if (state.report.stale) out.push(`report.md cũ hơn lần so gần nhất. Chạy lại skill ui-check cho ${feature} ${state.screen}.`);
+  else if (state.decisions_stale) out.push("report.md đã đổi sau khi tester lưu quyết định, tester cần quyết định lại từng mục.");
+  else if (!state.decisions) out.push("Tester chưa quyết định. Mỗi mục cần một trong: bug, chấp nhận, cần xem.");
   else if (undecidedCount(state) > 0) {
     out.push(`Tester chưa quyết định hết mọi mục (còn ${undecidedCount(state)} mục).`);
   } else if (bugCount(state) > 0) {
     out.push(`Còn ${bugCount(state)} mục đánh dấu Bug. Sửa UI rồi chụp và so lại, hoặc đổi quyết định, trước khi tạo baseline.`);
   }
-  if (runnerBusy) out.push("Playwright đang chạy. Chờ xong hoặc bấm Dừng.");
+  if (runnerBusy) out.push("Playwright đang chạy. Chờ xong.");
   return out;
 }

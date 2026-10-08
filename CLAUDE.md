@@ -6,23 +6,43 @@
   KHÔNG tự đổi status sang automated
 
 ## Tester chỉ chat
-- Tester không gõ lệnh, không mở UI (UI đang tạm dừng). Bạn chạy mọi lệnh thay tester và trả lời bằng tiếng Việt, ngắn
+- Không có giao diện web. Tester không gõ lệnh. Bạn chạy mọi lệnh thay tester và trả lời bằng tiếng Việt, ngắn
+- Tester hỏi "đang tới đâu", "làm gì tiếp": `npm run cli -- status --feature <f>` rồi nói lại dòng "Việc tiếp theo"
 - Chưa có `node_modules/`: chạy `npm install` và `npx playwright install chromium` trước khi làm việc khác
 - Tester nói "mở trình duyệt", "cho xem trình duyệt", "chạy có giao diện": `npm run cli -- settings --headless false`.
   Nói "chạy ẩn", "tắt trình duyệt": `--headless true`. Áp dụng cho Playwright và agent-browser. Session agent-browser
   đang mở giữ chế độ cũ: đóng session rồi mở lại. Không tự đổi khi tester không yêu cầu
-- Tester gửi file use case (.md, .docx của D5) hoặc đường dẫn file: `npm run cli -- usecase-add --feature <f> --file <đường dẫn>`
+- Tester kéo file use case (.md, .docx của D5) vào chat: Claude Code chèn đường dẫn file vào tin nhắn. Chạy
+  `npm run cli -- usecase-add --feature <f> --file <đường dẫn>`. Không đọc thẳng file .docx. Chưa rõ tính năng thì hỏi
 - Đăng nhập qua chat (trang cần SSO, OTP, captcha):
   1. Chạy nền `npm run cli -- login --feature <f> --wait-flag`. Lệnh mở cửa sổ trình duyệt trên máy tester
   2. Nhắn tester: đăng nhập trên cửa sổ vừa mở, xong thì trả lời "xong". Không hỏi, không nhận mật khẩu hay OTP qua chat
   3. Tester trả lời xong: tạo file rỗng `auth/<f>.save` (`touch`). Lệnh login tự lưu phiên, xóa file cờ rồi thoát
   4. Kiểm tra: `npm run cli -- check-session --feature <f> --url <baseURL + path>`
+- Tester kéo ảnh Figma (PNG export 1x) vào chat: chép vào `features/<f>/figma/<screen>.png` (hỏi screen nếu chưa rõ), rồi `npm run cli -- ui-diff --feature <f> --screen <screen>`
 - Tester gửi mật khẩu hay OTP vào chat: không dùng, không lặp lại, nhắc tester đổi mật khẩu và đăng nhập trên cửa sổ trình duyệt
-- Skill nhắc thao tác "trên UI" mà chưa có lệnh tương ứng: nói rõ cho tester bước đó cần làm gì, không tự quyết thay tester
+
+## Quyết định của tester qua chat
+Các lệnh dưới đây ghi quyết định của tester. Chỉ chạy khi tester nói rõ trong chat, đúng mã và đúng ý. Câu mơ hồ ("ok", "được")
+thì hỏi lại mã nào, quyết định gì. Không bao giờ tự chạy để đi tiếp quy trình
+
+| Tester nói | Lệnh |
+| --- | --- |
+| "duyệt TC_X", "duyệt hết" | `testcase-status --feature <f> --id TC_X --status reviewed` (hoặc `--all-draft`) |
+| "bỏ duyệt TC_X" | `testcase-status --feature <f> --id TC_X --status draft` |
+| "xác nhận TC_X" | `ai-decision --feature <f> --id TC_X --decision confirmed [--note ...]` |
+| "từ chối TC_X, lý do ...", "nghi bug ..." | `ai-decision --feature <f> --id TC_X --decision rejected --note "..." [--bug "..."]` |
+| "đưa TC_X vào regression" | `automate --feature <f> --id TC_X` |
+| "áp dụng sửa locator TC_X" | `heal-apply --feature <f> --id TC_X --run-dir <đợt>` |
+| "mục 1 chấp nhận, mục 2 bug ..., mục 3 cần xem" | `ui-decision --feature <f> --screen <s> --item 1=accept --item "2=bug:..." --item 3=review` |
+| "tạo baseline <screen>" | `baseline --feature <f> --screen <s>` |
+| "kết luận đợt: ...", "tôi là ..." | `summary --feature <f> --conclusion "..." [--tester "..."]`. Chép đúng lời tester, không tự viết kết luận |
+
+Lệnh từ chối (ví dụ spec chưa pass, còn mục bug): đọc lại thông báo cho tester, không tìm cách lách
 
 ## Lệnh của tool
 - Mọi script gọi qua `npm run cli -- <lệnh>`. Không chạy file trong `tool/` trực tiếp, không tự viết script xử lý ảnh hay phiên
-- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `settings`, `usecase-add`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
+- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `settings`, `usecase-add`, `status`, `testcase-status`, `ai-decision`, `automate`, `heal-apply`, `ui-diff`, `ui-decision`, `baseline`, `regression`, `summary`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`. Xem `npm run cli -- help`
 - Chạy spec Playwright chỉ bằng `npm run cli -- run-spec`. KHÔNG chạy `npx playwright test` trong shell của bạn: log và `playwright-results.json` chỉ được che credential khi đi qua lệnh này
 - Schema mọi file dùng chung: `docs/schemas.md`
 
@@ -78,7 +98,7 @@
 - Thiếu ảnh Figma cho màn nào thì báo tester, không tự bỏ qua âm thầm
 
 ## Kiểm tra giao diện không cần Figma
-- Dùng skill `ui-audit` (`/ui-audit <url | feature> [screen]`). Tester có thể chỉ chat, không mở UI
+- Dùng skill `ui-audit` (`/ui-audit <url | feature> [screen]`)
 - Chưa có tính năng: `npm run cli -- feature-init --feature <f> --url <url>`. Khai báo `theme` trong feature.json trước khi đo
 - Đo và chụp chỉ bằng `npm run cli -- audit --feature <f>`. Kết quả ở `<đợt>/ui-audit/<screen>/`
 - Được bấm thử link nghi lỗi bằng agent-browser (session `ui-audit-<f>`). Không điền form, không gửi dữ liệu
@@ -89,5 +109,5 @@
 - Dùng skill `heal-locator` (`/heal-locator <feature> <id>`). Nhắc tester phân loại trước: bug thật, locator hỏng hay UI đổi có chủ đích
 - Chỉ đề xuất sửa locator, giữ nguyên assertion và luồng test; đầu ra `<đợt>/heal/<id>.diff` và `<id>.md`. Bug thật thì không tạo diff
 - KHÔNG sửa trực tiếp spec, KHÔNG đổi expect, KHÔNG bỏ bước, KHÔNG waitForTimeout
-- Tester duyệt mới áp dụng: nút "Áp dụng và chạy lại" trên UI (`POST /api/runs/<đợt>/heal/<id>/apply`), tool sao lưu spec sang `heal/<id>.spec.ts.bak` (lần áp sau là `.bak.2`, `.bak.3`) rồi chạy lại spec
+- Tester nói "áp dụng" mới chạy `npm run cli -- heal-apply`: tool sao lưu spec sang `heal/<id>.spec.ts.bak` (lần áp sau là `.bak.2`, `.bak.3`) rồi chạy lại spec
 - Chỉ đọc `playwright-log.txt` và `playwright-results.json` của đợt (tool đã che credential). Không mở `playwright-report/` và `test-results/`: trace và report có thể chứa giá trị đã nhập

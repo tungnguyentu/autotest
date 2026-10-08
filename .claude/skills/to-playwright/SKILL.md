@@ -55,7 +55,7 @@ Trả lời ngắn gọn:
 - Đường dẫn spec, kết quả chạy (pass hoặc fail, thời gian), đường dẫn report `<đợt>/playwright-report/index.html`.
 - Số locator theo loại: role, label, placeholder, text, css.
 - Mọi `// TODO locator` và lý do, mọi assertion suy ra từ quan sát mà không có step `assert_*` tương ứng, mọi bước không chuyển được.
-- Việc còn lại của tester: đọc spec, duyệt, và tự đặt `status: automated` trên UI. Skill không đổi status.
+- Việc còn lại của tester: đọc spec và quyết định. Khi spec pass và tester nói "đưa vào regression", chạy `npm run cli -- automate --feature <feature> --id <id>`. Skill không tự đổi status.
 
 ## Không được làm
 

@@ -5,7 +5,7 @@ description: Sinh test case từ use case cho một tính năng. Đọc features
 
 # gen-testcases: use case thành test case
 
-Lệnh: `/gen-testcases <feature>`. Đầu ra là ĐỀ XUẤT ở trạng thái `draft`. Tester duyệt trên UI (đổi sang `reviewed`) trước khi AI được chạy thử.
+Lệnh: `/gen-testcases <feature>`. Đầu ra là ĐỀ XUẤT ở trạng thái `draft`. Tester đọc và duyệt trong chat. Chỉ khi tester nói "duyệt <mã>" hoặc "duyệt hết" mới chạy `npm run cli -- testcase-status --feature <feature> --id <mã> --status reviewed` (hoặc `--all-draft`).
 
 ## Đọc trước khi làm
 
@@ -40,7 +40,7 @@ Mỗi test case đủ các trường theo schema:
 - `title`: một câu nói rõ điều kiện và kết quả, ví dụ "Đăng nhập thất bại khi mật khẩu sai".
 - `screen`: key trong `feature.json` nếu test case kiểm tra màn hình đó. Không có key phù hợp thì bỏ trường.
 - `preconditions`: trạng thái cần có trước (đã đăng nhập, dữ liệu đã tồn tại). Mảng rỗng nếu không có.
-- `steps`: từng thao tác một dòng, theo thứ tự thực tế trên UI, kèm dữ liệu test cụ thể. Viết "Nhập `ab` vào ô Tên" chứ không viết "Nhập tên ngắn".
+- `steps`: từng thao tác một dòng, theo thứ tự thực tế trên giao diện trang, kèm dữ liệu test cụ thể. Viết "Nhập `ab` vào ô Tên" chứ không viết "Nhập tên ngắn".
 - `expected`: mỗi dòng là một điều quan sát được và kiểm tra được (URL, chữ hiển thị, phần tử hiện hoặc ẩn, thông báo lỗi đúng nguyên văn trong use case). Mỗi dòng sẽ thành ít nhất một `expect()`. Không viết "hoạt động đúng".
 - `priority`: `High` cho luồng chính và lỗi chặn nghiệp vụ, `Medium`, `Low` cho trường hợp hiếm.
 - `type`: một trong bốn giá trị ở bảng trên.
@@ -58,7 +58,7 @@ Bước cần OTP, captcha, hoặc việc ngoài trình duyệt (đọc email, S
 
 - Đọc `testcases.json` hiện có. Giữ nguyên từng phần tử cũ, cùng thứ tự, kể cả `draft`. Chỉ thêm phần tử với id mới ở cuối.
 - Không sửa, không xóa, không đổi `status` của test case đã có. Test case đã `reviewed` trở lên là của tester.
-- Điều kiện nào đã có test case tương đương thì bỏ qua và nói rõ ở câu trả lời. Muốn đổi test case cũ thì đề nghị tester sửa trên UI hoặc xóa tay.
+- Điều kiện nào đã có test case tương đương thì bỏ qua và nói rõ ở câu trả lời. Muốn đổi test case cũ thì hỏi tester. Tester đồng ý thì sửa nội dung trong `testcases.json`, giữ nguyên `id` và `status`.
 - Ghi bằng công cụ ghi file, một mảng JSON, thụt 2 dấu cách, UTF-8.
 
 ### 4. Kiểm tra
@@ -74,7 +74,8 @@ Lệnh đọc file theo `tool/core/schemas.ts`, in số test case theo loại v�
 - Số test case mới theo `type`, số test case `manual`, id đã thêm.
 - Điều kiện use case chưa rõ, giả định đã dùng (tester cần xác nhận).
 - Các khóa `.env` cần có.
-- Bước tiếp: mở UI, duyệt từng test case (đổi `draft` sang `reviewed`), rồi chạy `/run-testcase <feature> <id>`.
+- Liệt kê ngắn từng test case mới (mã, tiêu đề, loại) để tester đọc trong chat.
+- Bước tiếp: tester nói "duyệt <mã>", "duyệt hết", hoặc nêu chỗ cần sửa. Sau khi duyệt, AI chạy thử (skill `run-testcase`).
 
 ## Không được làm
 

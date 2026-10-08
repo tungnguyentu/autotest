@@ -94,7 +94,7 @@ export function readPlaywrightResults(file: string): PlaywrightTestResult[] {
 
 /**
  * Che giá trị credential trong `playwright-results.json` (thông báo lỗi có thể in giá trị đã nhập) ngay sau lần chạy,
- * để skill và UI chỉ thấy bản đã che. File không phải JSON thì che theo văn bản thô. Không có file thì bỏ qua.
+ * để skill chỉ thấy bản đã che. File không phải JSON thì che theo văn bản thô. Không có file thì bỏ qua.
  */
 export function redactResultsFile(file: string, secrets: Secrets): void {
   if (!Object.keys(secrets).length) return;
@@ -130,7 +130,7 @@ export function createPlaywrightRunner(options: RunnerOptions) {
   function start(req: StartRequest): RunningInfo {
     if (current) {
       throw new RunnerBusyError(
-        `Playwright đang chạy (${current.info.feature}, ${current.info.spec ?? "toàn bộ spec"}). Chờ xong hoặc bấm Dừng.`,
+        `Playwright đang chạy (${current.info.feature}, ${current.info.spec ?? "toàn bộ spec"}). Chờ xong.`,
       );
     }
     const run = path.basename(req.runDir);

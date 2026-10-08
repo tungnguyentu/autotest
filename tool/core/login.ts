@@ -9,7 +9,7 @@ export interface LoginOptions extends PathOptions {
   feature: string;
   /** Đường dẫn mở đầu, mặc định trang gốc của baseURL. */
   start?: string;
-  /** Ngoài Enter trên stdin, chấp nhận file cờ auth/<feature>.save (UI dùng ở Phase 2). */
+  /** Ngoài Enter trên stdin, chấp nhận file cờ auth/<feature>.save (Claude tạo khi tester báo đăng nhập xong trong chat). */
   waitFlag?: boolean;
   log?: (msg: string) => void;
 }

@@ -5,7 +5,7 @@ description: Đề xuất sửa locator hỏng của một spec Playwright đã 
 
 # heal-locator: đề xuất sửa locator cho spec fail
 
-Lệnh: `/heal-locator <feature> <id> [đợt]`. Kết quả là ĐỀ XUẤT: hai file `heal/<id>.diff` và `heal/<id>.md` trong thư mục đợt. Tester xem trên UI (khu Playwright của trang đợt) rồi bấm "Áp dụng và chạy lại", hoặc tự áp tay. Skill không sửa `tests/<feature>/<id>.spec.ts`.
+Lệnh: `/heal-locator <feature> <id> [đợt]`. Kết quả là ĐỀ XUẤT: hai file `heal/<id>.diff` và `heal/<id>.md` trong thư mục đợt. Tester đọc diff trong chat. Chỉ khi tester nói "áp dụng" mới chạy `npm run cli -- heal-apply --feature <feature> --id <id> --run-dir <đợt>`. Skill không sửa `tests/<feature>/<id>.spec.ts`.
 
 Công thức dưới dùng `F` cho tính năng, `ID` cho mã test case, `S` cho session `ui-check-F`, `RUN` cho thư mục đợt.
 
@@ -17,7 +17,7 @@ Công thức dưới dùng `F` cho tính năng, `ID` cho mã test case, `S` cho 
 - Không đọc, không in `features/F/.env` và `auth/`. Không `state save`. Không tự đăng nhập, không vượt OTP.
 - Không đổi spec trực tiếp. Không ghi vào `testcases.json`.
 
-Tool kiểm tra lại các điều cấm này khi tester bấm áp dụng và trả 409 nếu diff vi phạm: dòng đổi không có locator, có `expect(`, `waitForTimeout`, `force:`, `test.skip`, hoặc phần ngoài biểu thức locator (tên hành động như `click` thành `dblclick`, giá trị trong `fill(`, `type(`, tùy chọn) khác dòng cũ. Đừng cố lách.
+Lệnh `heal-apply` kiểm tra lại các điều cấm này và từ chối nếu diff vi phạm: dòng đổi không có locator, có `expect(`, `waitForTimeout`, `force:`, `test.skip`, hoặc phần ngoài biểu thức locator (tên hành động như `click` thành `dblclick`, giá trị trong `fill(`, `type(`, tùy chọn) khác dòng cũ. Đừng cố lách.
 
 ## Quy trình
 
@@ -113,10 +113,10 @@ Phân loại đề xuất: locator hỏng. Căn cứ: <vì sao chức năng vẫ
 - Độ chắc: cao | trung bình | thấp, vì <...>
 
 ## Việc tester cần làm
-Xem diff, bấm "Áp dụng và chạy lại" trên UI. Nếu spec vẫn fail ở dòng khác, chạy lại lệnh.
+Tester đọc diff, nói "áp dụng" nếu đồng ý. Nếu spec vẫn fail ở dòng khác, chạy lại skill.
 ```
 
-Khi KHÔNG có diff (bug thật, element không còn, luồng đổi, lỗi ở `expect`, hết phiên): ghi `.md` nêu loại lỗi, bằng chứng (dòng log, nội dung snapshot, ảnh nếu có), và việc tester nên làm (ghi bug, viết lại test case, đăng nhập lại). Xóa `RUN/heal/ID.diff` nếu có từ lần trước để UI không hiện đề xuất cũ. Không tạo diff. Dừng.
+Khi KHÔNG có diff (bug thật, element không còn, luồng đổi, lỗi ở `expect`, hết phiên): ghi `.md` nêu loại lỗi, bằng chứng (dòng log, nội dung snapshot, ảnh nếu có), và việc tester nên làm (ghi bug, viết lại test case, đăng nhập lại). Xóa `RUN/heal/ID.diff` nếu có từ lần trước để `heal-apply` không áp nhầm đề xuất cũ. Không tạo diff. Dừng.
 
 ### 6. Dọn và báo cáo
 
@@ -124,7 +124,7 @@ Khi KHÔNG có diff (bug thật, element không còn, luồng đổi, lỗi ở 
 agent-browser --session S close
 ```
 
-Báo tester: đợt nào, dòng nào fail, có diff hay không, đường dẫn `RUN/heal/ID.diff` và `.md`, và nhắc xem trên UI trước khi áp dụng. Không tự gọi API áp dụng, không tự chạy lại spec.
+Báo tester: đợt nào, dòng nào fail, có diff hay không, đường dẫn `RUN/heal/ID.diff` và `.md`, và hiện nội dung diff trong chat. Không tự chạy `heal-apply` khi tester chưa nói đồng ý.
 
 ## Lệnh CLI và công cụ skill này dùng
 

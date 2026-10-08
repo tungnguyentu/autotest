@@ -3,11 +3,28 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { writeFeature, writeTestCases } from "../../core/feature-store.ts";
-import type { TestCase } from "../../core/schemas.ts";
-import { CONCLUSION_HEADING, CONCLUSION_PLACEHOLDER, buildSummaryText, parseSummary, writeSummary } from "../../core/summary.ts";
-import { parseFeature } from "../../core/schemas.ts";
-import { CASE, FEATURE } from "./helpers.ts";
+import { writeFeature, writeTestCases } from "../feature-store.ts";
+import type { TestCase } from "../schemas.ts";
+import { CONCLUSION_HEADING, CONCLUSION_PLACEHOLDER, buildSummaryText, parseSummary, writeSummary } from "../summary.ts";
+import { parseFeature } from "../schemas.ts";
+const FEATURE = {
+  feature: "demo",
+  service: "Demo",
+  baseURL: "https://demo.example.com",
+  viewport: { width: 1280, height: 720 },
+  screens: { home: { path: "/", auth: true, mask: [], scale: 1, wait_for: [] } },
+};
+
+const CASE = {
+  id: "TC_DEMO_001",
+  title: "Đăng nhập đúng",
+  preconditions: [],
+  steps: ["Mở trang đăng nhập", "Nhập thông tin hợp lệ"],
+  expected: ["Vào được trang chủ"],
+  priority: "High",
+  type: "positive",
+  status: "draft",
+};
 
 let root: string;
 let runDir: string;

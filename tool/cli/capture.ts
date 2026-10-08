@@ -14,7 +14,7 @@ export interface CaptureOptions extends PathOptions {
   screens?: string[];
   fullPage?: boolean;
   headed?: boolean;
-  /** Dừng giữa chừng (server tắt). Trình duyệt được đóng. */
+  /** Dừng giữa chừng. Trình duyệt được đóng. */
   signal?: AbortSignal;
   /** Gọi sau khi một screen chụp xong và `meta.json` đã ghi. Chạy tuần tự, mỗi lần một screen. */
   onScreen?: (meta: Meta, dir: string) => void | Promise<void>;
@@ -67,7 +67,7 @@ async function captureOne(
   if (screen.auth) {
     const state = authFile(opts.feature, opts);
     if (!fs.existsSync(state)) {
-      meta.warnings.push(`Thiếu ${path.relative(root, state)}. Đăng nhập tay trên UI (khu Đăng nhập) rồi chụp lại.`);
+      meta.warnings.push(`Thiếu ${path.relative(root, state)}. Tester cần đăng nhập (lệnh login --wait-flag) rồi chụp lại.`);
       writeMeta();
       return meta;
     }

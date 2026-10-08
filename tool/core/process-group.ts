@@ -1,7 +1,7 @@
 import type { ChildProcess } from "node:child_process";
 
 /**
- * Các tiến trình con chạy trong nhóm tiến trình riêng (Playwright, cửa sổ đăng nhập). Server tắt đột ngột
+ * Các tiến trình con chạy trong nhóm tiến trình riêng (Playwright, cửa sổ đăng nhập). Lệnh CLI bị dừng đột ngột
  * (SIGHUP khi đóng terminal, lỗi không bắt được) mà không dọn thì chúng mồ côi và giữ Chromium.
  */
 const groups = new Set<ChildProcess>();
@@ -34,7 +34,7 @@ export function killAllGroups(signal: NodeJS.Signals): void {
 export const trackedGroupCount = (): number => groups.size;
 
 /**
- * Cài handler cho tiến trình chính (server hoặc CLI): tín hiệu dừng và lỗi không bắt được đều chạy `shutdown`
+ * Cài handler cho tiến trình chính (lệnh CLI): tín hiệu dừng và lỗi không bắt được đều chạy `shutdown`
  * một lần; tín hiệu lần hai (hoặc `shutdown` quá `forceAfterMs`) giết cứng mọi nhóm rồi thoát. Handler `exit` là lớp cuối
  * khi tiến trình thoát mà không qua `shutdown`. Trả về hàm gỡ handler.
  */

@@ -24,7 +24,7 @@ function readJson(file: string, label: string): unknown {
   }
 }
 
-/** Ghi qua file tạm rồi đổi tên, để UI và skill không đọc phải file ghi dở. */
+/** Ghi qua file tạm rồi đổi tên, để lệnh và skill khác không đọc phải file ghi dở. */
 export function writeTextAtomic(file: string, text: string): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;

@@ -52,7 +52,7 @@ Quy tắc phụ:
   - Không có: suy ra từ quan sát (URL cuối, chữ AI đã thấy, phần tử hiển thị) thành `expect()` cùng mức chặt, đặt comment `// expected: <nguyên văn dòng expected>`, và liệt kê trong báo cáo là "assertion suy ra, tester xem lại". Không suy ra được thì dừng và hỏi tester.
 - Các kiểu thường dùng: chuyển trang `toHaveURL`, hiển thị `toBeVisible()`, nội dung `toHaveText()` hoặc `toContainText()`, lỗi validation `expect(page.getByText('...')).toBeVisible()`.
 - Giữ nguyên chặt-lỏng của lúc AI kiểm: không đổi `toContainText` thành `toBeVisible`, không bỏ assertion vì khó chạy.
-- Màn hình có trong `feature.json` (`screens`) và đã có baseline `tests/__screenshots__/<feature>/<screen>.png`: thêm `await expect(page).toHaveScreenshot('<screen>.png', { mask: [page.locator('<mask>')], maxDiffPixelRatio: 0.01 })` với `mask` lấy từ `feature.json`. Chưa có baseline thì không thêm (lần chạy đầu sẽ fail vì chưa có ảnh gốc, và baseline chỉ tạo sau khi tester duyệt UI). Ghi vào báo cáo màn nào còn thiếu.
+- Màn hình có trong `feature.json` (`screens`) và đã có baseline `tests/__screenshots__/<feature>/<screen>.png`: thêm `await expect(page).toHaveScreenshot('<screen>.png', { mask: [page.locator('<mask>')], maxDiffPixelRatio: 0.01 })` với `mask` lấy từ `feature.json`. Chưa có baseline thì không thêm (lần chạy đầu sẽ fail vì chưa có ảnh gốc, và baseline chỉ tạo sau khi tester duyệt so sánh với Figma). Ghi vào báo cáo màn nào còn thiếu.
 - Cấm `page.waitForTimeout`. Chờ bằng auto-wait của Playwright hoặc `expect(...)`.
 
 ## Mẫu

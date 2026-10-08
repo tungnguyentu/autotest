@@ -129,32 +129,32 @@ Mỗi phần tử của `steps`:
 | `note` | chuỗi | Lý do hoặc ghi chú bug |
 | `decided_at` | thời gian hoặc `null` | Lúc quyết định, kèm múi giờ (ví dụ `+07:00`) |
 
-Chỉ tool ghi `tester`, qua UI trang đợt (`POST /api/runs/<đợt>/ai-runs/<id>/decision`). Tool ghi cùng lúc status test case: `confirmed` thành `ai-passed`, `rejected` thành `ai-failed`. `ai-passed` thành `automated` qua `POST /api/features/<f>/testcases/<id>/automate`.
+Chỉ lệnh `ai-decision` ghi `tester`, khi tester nói trong chat. Lệnh ghi cùng lúc status test case: `confirmed` thành `ai-passed`, `rejected` thành `ai-failed`. `ai-passed` thành `automated` qua lệnh `automate`.
 
 ## `<đợt>/playwright-last.json`
 
-Tool ghi khi một lần chạy Playwright từ UI kết thúc (kể cả bị dừng). Kết quả từng test lấy từ `playwright-results.json` (reporter json).
+Các lệnh `run-spec`, `regression` và `heal-apply` ghi khi một lần chạy Playwright kết thúc. Kết quả từng test lấy từ `playwright-results.json` (reporter json).
 
 | Trường | Kiểu | Mô tả |
 | --- | --- | --- |
 | `feature` | chuỗi | Tên tính năng |
 | `spec` | chuỗi hoặc `null` | Spec đã chạy, ví dụ `tests/staging/TC_001.spec.ts`. `null` là regression |
 | `exit_code` | số nguyên hoặc `null` | Mã thoát. `null` khi tiến trình bị dừng bằng tín hiệu |
-| `stopped` | boolean | Tester đã bấm Dừng |
+| `stopped` | boolean | Tiến trình bị dừng giữa chừng |
 | `started_at`, `finished_at` | thời gian | Kèm múi giờ |
 | `tests` | mảng | Mỗi phần tử có `file` (tên file spec), `title`, `status` (`passed`, `failed`, `flaky`, `skipped`), `duration_ms`. Rỗng nếu không có kết quả |
 
-Cùng thư mục: `playwright-log.txt` (log đã che credential), `playwright-results.json`, `playwright-report/`, `test-results/` (ảnh và trace của test fail), `bugs.md` (mục "Nghi bug" do tester ghi khi quyết định, mỗi test case một mục `## <id> - <tiêu đề>`).
+Cùng thư mục: `playwright-log.txt` (log đã che credential), `playwright-results.json`, `playwright-report/`, `test-results/` (ảnh và trace của test fail), `bugs.md` (mục do `ai-decision --bug` ghi khi tester nghi bug, mỗi test case một mục `## <id> - <tiêu đề>`).
 
 ## `<đợt>/heal/<id>.diff`, `<id>.md`, `<id>.spec.ts.bak`
 
-Do skill `heal-locator` và tool ghi khi sửa locator của spec fail.
+Skill `heal-locator` ghi `.diff` và `.md`. Lệnh `heal-apply` ghi `.spec.ts.bak`.
 
 | File | Nội dung |
 | --- | --- |
 | `<id>.diff` | Unified diff (`diff -u`) của `tests/<feature>/<id>.spec.ts`. Chỉ đổi dòng locator, số dòng xóa bằng số dòng thêm, không chạm `expect(`. Tên file trong dòng `---`/`+++` không được dùng, tool luôn áp lên spec của `<id>` |
 | `<id>.md` | Lý do bằng tiếng Việt. Có diff: mỗi hunk một mục (cũ, mới, lý do, độ chắc). Không có diff: loại lỗi, bằng chứng, việc tester nên làm |
-| `<id>.spec.ts.bak` | Spec ngay trước lần áp dụng gần nhất. Tool ghi khi tester bấm "Áp dụng và chạy lại" |
+| `<id>.spec.ts.bak` | Spec ngay trước lần áp dụng gần nhất (các lần sau: `.bak.2`, `.bak.3`). Lệnh `heal-apply` ghi, khi tester nói "áp dụng" trong chat |
 
 ## `<đợt>/ui-diff/<screen>/metrics.json`
 
@@ -202,7 +202,7 @@ Do lệnh `capture` ghi. Ảnh Figma thiếu, thiếu phiên, bị chuyển hư�
 | `mask_boxes` | mảng | Vùng mask tính từ selector `mask`: `{selector, x, y, width, height}` (đơn vị pixel, làm tròn). `compare` bỏ các vùng này khỏi diff |
 | `warnings` | mảng chuỗi | Cảnh báo khi chụp. `compare` chép vào `metrics.json` |
 
-Cùng thư mục: `actual.png`, `figma.png` (bản sao lúc chụp), `diff.png`, `side_by_side.png` (Figma, thực tế, diff từ trái sang phải), `crops/region_NN.png` (Figma trái, thực tế phải), `report.md` (do skill `ui-check` ghi), `decisions.json`, `baseline.json`. `final_url` chỉ gồm origin và đường dẫn, không có query và fragment (có thể chứa token). Chụp lại thì tool xóa `actual.png`, `figma.png`, `diff.png`, `side_by_side.png`, `metrics.json`, `meta.json`, `crops/` của screen đó, giữ `report.md`, `decisions.json`, `baseline.json`. `report.md` cũ hơn `metrics.json` bị UI đánh dấu là cũ.
+Cùng thư mục: `actual.png`, `figma.png` (bản sao lúc chụp), `diff.png`, `side_by_side.png` (Figma, thực tế, diff từ trái sang phải), `crops/region_NN.png` (Figma trái, thực tế phải), `report.md` (do skill `ui-check` ghi), `decisions.json`, `baseline.json`. `final_url` chỉ gồm origin và đường dẫn, không có query và fragment (có thể chứa token). Chụp lại thì tool xóa `actual.png`, `figma.png`, `diff.png`, `side_by_side.png`, `metrics.json`, `meta.json`, `crops/` của screen đó, giữ `report.md`, `decisions.json`, `baseline.json`. `report.md` cũ hơn `metrics.json` bị coi là cũ, và `baseline` từ chối.
 
 ## `<đợt>/ui-diff/<screen>/report.md`
 
@@ -210,17 +210,17 @@ Mẫu ở `.claude/skills/_shared/report-template.md`. Tool chỉ đọc bảng 
 
 ## `<đợt>/ui-diff/<screen>/decisions.json`
 
-Do tool ghi khi tester bấm "Lưu quyết định". Ghi đè cả file mỗi lần.
+Lệnh `ui-decision` ghi khi tester quyết định trong chat. Ghi đè cả file mỗi lần.
 
 | Trường | Kiểu | Mô tả |
 | --- | --- | --- |
 | `items` | mảng | Mỗi phần tử: `index` (số dòng của bảng trong `report.md`, từ 1), `decision` (`bug`, `accept`, `review`), `note` (chuỗi, có thể rỗng) |
 | `decided_at` | thời gian | Lúc lưu |
-| `report_hash` | chuỗi, tùy chọn | sha256 của `report.md` lúc lưu. Thiếu hoặc khác hash của `report.md` hiện tại thì quyết định đã cũ: tool coi mọi mục là chưa quyết định, UI báo "report đã đổi, cần quyết định lại" và chưa cho tạo baseline. File cũ không có trường này cũng bị coi là đã cũ. Không xóa file để vô hiệu hóa |
+| `report_hash` | chuỗi, tùy chọn | sha256 của `report.md` lúc lưu. Thiếu hoặc khác hash của `report.md` hiện tại thì quyết định đã cũ: lệnh coi mọi mục là chưa quyết định, báo "report đã đổi, cần quyết định lại" và `baseline` từ chối. File cũ không có trường này cũng bị coi là đã cũ. Không xóa file để vô hiệu hóa |
 
 ## `<đợt>/ui-diff/<screen>/baseline.json`
 
-Do tool ghi sau khi `npx playwright test <spec> --update-snapshots` thoát với mã 0 và ảnh baseline đã có trên disk.
+Lệnh `baseline` ghi sau khi chạy spec với `--update-snapshots` thoát với mã 0 và ảnh baseline đã có trên disk.
 
 | Trường | Kiểu | Mô tả |
 | --- | --- | --- |
@@ -263,7 +263,7 @@ Frontmatter (mỗi giá trị là chuỗi trong nháy kép, ví dụ `tester: "L
 | `environment` | chuỗi | không | URL môi trường |
 | `build` | chuỗi | không | Build hoặc commit được test |
 
-Phần thân có các mục: phạm vi, bảng test case kèm kết quả đề xuất, link bug, và mục `## Kết luận của tester`. Skill luôn để trống mục cuối. Chỉ tester điền, trên UI hoặc bằng tay.
+Phần thân có các mục: phạm vi, bảng test case kèm kết quả đề xuất, link bug, và mục `## Kết luận của tester`. Skill luôn để trống mục cuối. Chỉ tester quyết định nội dung. Claude chép đúng lời tester qua `summary --conclusion`, hoặc tester sửa tay.
 
 ## `settings.local.json`
 
@@ -287,6 +287,6 @@ Lệnh `settings` ghi thêm `headed` vào `agent-browser.json` ở thư mục g�
 | --- | --- | --- |
 | `feature` | chuỗi | Tên tính năng |
 | `saved_at` | thời gian | Lúc lưu phiên |
-| `final_url` | chuỗi | URL của trang lúc tester bấm lưu, chỉ origin và đường dẫn (bỏ query và fragment vì có thể chứa token) |
+| `final_url` | chuỗi | URL của trang lúc lưu phiên, chỉ origin và đường dẫn (bỏ query và fragment vì có thể chứa token) |
 
-`auth/<feature>.save` là file cờ rỗng. UI tạo file này để báo lệnh `login --wait-flag` lưu phiên. Lệnh xóa file sau khi lưu.
+`auth/<feature>.save` là file cờ rỗng. Claude tạo file này khi tester nói "xong" để báo lệnh `login --wait-flag` lưu phiên. Lệnh xóa file sau khi lưu.

@@ -30,9 +30,10 @@ Bạn chỉ chat với Claude Code. Bạn không cần gõ lệnh, không cần 
 | --- | --- |
 | Kiểm tra giao diện một trang, không có Figma và use case | "Test giao diện https://staging-home.bizflycloud.vn/ ở chế độ sáng và tối, xem có lỗi gì không" hoặc `/ui-audit <url>` |
 | Nhìn thấy trình duyệt khi AI làm việc | "Mở trình duyệt khi chạy". Muốn chạy ẩn lại (nhanh hơn): "Chạy ẩn trình duyệt" |
-| Đưa use case (file Word D5) | Kéo file vào chat hoặc gửi đường dẫn: "Thêm use case này cho tính năng X: /Users/.../D5.docx" |
+| Đưa use case (file Word D5) | Kéo file vào chat: "Thêm use case này cho tính năng X: /Users/.../D5.docx" |
 | Sinh test case từ use case | "Sinh test case cho tính năng X" |
 | Đăng nhập trang cần SSO, OTP | "Đăng nhập tính năng X". Claude mở cửa sổ trình duyệt, bạn đăng nhập trên đó, xong thì trả lời "xong" |
+| Biết đang tới đâu, làm gì tiếp | "Đang tới đâu?" hoặc "Làm gì tiếp?". Claude đọc tiến độ và nói việc tiếp theo |
 
 Không gửi mật khẩu, mã OTP hay cookie vào chat. Bạn chỉ nhập chúng trên cửa sổ trình duyệt. Lỡ gửi thì đổi mật khẩu.
 
@@ -44,83 +45,100 @@ Claude mất khoảng 3 đến 5 phút một trang, rồi gửi đường dẫn 
 - Mục "Sai khác đề xuất": mỗi dòng có mức và bằng chứng (ảnh trong `review/` hoặc `shots/`, số đo trong `checks.json`). Đối chiếu ảnh trước khi tin.
 - Mục "Quyết định của tester": bạn điền.
 
-## 4. Quy trình sáu giai đoạn (cần UI, đang tạm dừng)
+## 4. Quy trình sáu giai đoạn
 
-Phần từ đây trở xuống mô tả quy trình trên giao diện web, đang tạm dừng. Các bước duyệt (đổi test case sang `reviewed`, xác nhận kết quả AI, áp dụng healing, tạo baseline) chưa làm được qua chat.
+Cả sáu giai đoạn làm bằng chat. Bạn nói, Claude chạy lệnh và báo kết quả, bạn mở file để đọc khi cần. Bạn không gõ lệnh, không mở trang web, không bấm nút.
 
 Có hai điểm duyệt bắt buộc. AI chỉ đề xuất, bạn quyết định.
 
-| # | Giai đoạn | Làm ở đâu | Kết quả ở file |
-| --- | --- | --- | --- |
-| 1 | Chuẩn bị tính năng | UI | `features/<f>/feature.json`, `usecases/*.md` (hoặc `.docx` đã chuyển), `auth/<f>.json` |
-| 2 | Sinh và duyệt test case | Claude Code, rồi UI | `features/<f>/testcases.json` |
-| 3 | AI chạy thử và xác nhận | Claude Code, rồi UI | `<đợt>/ai-run/<id>.json`, `.md`, ảnh |
-| 4 | Chuyển sang Playwright | Claude Code, rồi UI | `tests/<f>/<id>.spec.ts` |
-| 5 | So UI với Figma | UI, Claude Code, rồi UI | `<đợt>/ui-diff/<screen>/` |
-| 6 | Regression và tổng kết | UI | `<đợt>/summary.md`, `playwright-report/` |
+| # | Giai đoạn | Kết quả ở file |
+| --- | --- | --- |
+| 1 | Chuẩn bị tính năng | `features/<f>/feature.json`, `usecases/*.md`, `auth/<f>.json`, `figma/<screen>.png` |
+| 2 | Sinh và duyệt test case | `features/<f>/testcases.json` |
+| 3 | AI chạy thử và xác nhận | `<đợt>/ai-run/<id>.json`, `.md`, ảnh |
+| 4 | Chuyển sang Playwright | `tests/<f>/<id>.spec.ts` |
+| 5 | So UI với Figma | `<đợt>/ui-diff/<screen>/` |
+| 6 | Regression và tổng kết | `<đợt>/summary.md`, `playwright-report/` |
 
-Hai điểm duyệt: duyệt test case (giai đoạn 2) và xác nhận kết quả AI chạy thử (giai đoạn 3). Ngoài ra bạn còn quyết định từng sai khác UI, cho tạo baseline, và áp dụng sửa locator.
+Hai điểm duyệt: duyệt test case (giai đoạn 2) và xác nhận kết quả AI chạy thử (giai đoạn 3). Ngoài ra bạn còn quyết định từng sai khác UI, tạo baseline, đưa test case vào regression, áp dụng sửa locator, và viết kết luận của đợt.
 
-Trang nào cũng có ô "Bước tiếp theo". Ô này nói bạn cần làm gì và đưa sẵn lệnh để copy.
+Claude chỉ ghi quyết định khi bạn nói rõ mã test case hoặc screen và ý của bạn. Câu mơ hồ như "ok" hay "được" thì Claude hỏi lại. Claude không tự quyết định thay bạn để đi tiếp.
+
+Lạc đường thì hỏi "Đang tới đâu?". Claude đọc tiến độ và nói việc tiếp theo.
+
+### Bảng câu nói
+
+| Bạn nói | Claude làm |
+| --- | --- |
+| "duyệt TC_X" hoặc "duyệt hết" | Đổi test case từ `draft` sang `reviewed` |
+| "bỏ duyệt TC_X" | Đổi test case về `draft` |
+| "xác nhận TC_X" | Ghi bạn xác nhận kết quả AI chạy thử. Status thành `ai-passed` |
+| "từ chối TC_X, lý do ..." hoặc "nghi bug ..." | Ghi bạn từ chối kết quả AI. Status thành `ai-failed`. Nghi bug thì ghi thêm vào `<đợt>/bugs.md` |
+| "đưa TC_X vào regression" | Đổi status thành `automated`. Chỉ được khi spec đã pass |
+| "áp dụng sửa locator TC_X" | Áp bản sửa locator vào spec và chạy lại |
+| "mục 1 chấp nhận, mục 2 bug lệch 8px, mục 3 cần xem" | Ghi quyết định từng sai khác UI |
+| "tạo baseline <screen>" | Tạo ảnh baseline cho screen |
+| "kết luận đợt: ..." và "tôi là <tên>" | Ghi đúng lời bạn vào `summary.md` |
 
 ### Giai đoạn 1. Chuẩn bị tính năng
 
-Làm trên UI (http://localhost:4173).
-
-1. Trang chủ, bấm "Tạo tính năng". Điền tên (chữ, số, `-`, `_`, không kết thúc bằng `_r` kèm số vì trùng tên đợt vòng N), tên service, baseURL của môi trường, kích thước viewport.
-2. Trang tính năng, khu Screens: thêm từng màn hình (đường dẫn, có cần đăng nhập không).
-3. Khu Use case: tải file use case lên, dạng `.md` hoặc `.docx`. Tool chuyển file Word sang `.md` cùng tên, tách ảnh vào thư mục `<tên>.images/`, giữ file gốc. Mở file `.md` xem lại bảng và ảnh trước khi sinh test case. File `.doc` cũ: mở bằng Word, lưu lại dạng `.docx`. Sửa use case thì sửa file Word, đổi tên rồi tải lại, vì tool không ghi đè file có sẵn.
-4. Đăng nhập tay (xem mục 5).
-5. Export ảnh Figma (xem mục 6).
-6. Bấm "Tạo đợt mới". Mỗi lần test là một đợt, thư mục `evidence/<ngày>_<tính năng>/`.
+1. Tạo tính năng. Nói: "Tạo tính năng X cho https://... ". Claude tạo `feature.json` từ URL. Tên tính năng chỉ dùng chữ, số, `-`, `_`, và không kết thúc bằng `_r` kèm số (trùng tên đợt vòng N). Cần thêm màn hình, hoặc đổi kích thước viewport: nói với Claude, rồi mở `features/<f>/feature.json` để xem lại.
+2. Đưa use case. Kéo file `.md` hoặc `.docx` vào chat, nói tính năng nào. Claude chuyển file Word sang `.md` cùng tên, tách ảnh vào `<tên>.images/`, giữ file gốc. Mở file `.md` xem lại bảng và ảnh trước khi sinh test case. File `.doc` cũ: mở bằng Word, lưu lại dạng `.docx`. Sửa use case thì sửa file Word, đổi tên rồi kéo vào chat lại, vì tool không ghi đè file có sẵn.
+3. Đăng nhập tay nếu trang cần (xem mục 5).
+4. Export Figma nếu có (xem mục 6).
+5. Mỗi lần test là một đợt, thư mục `evidence/<ngày>_<tính năng>/`. Claude tạo đợt khi cần. Bạn không phải làm gì.
 
 ### Giai đoạn 2. Sinh và duyệt test case (điểm duyệt 1)
 
-1. Claude Code: `/gen-testcases <tính năng>`. AI ghi test case mới ở trạng thái `draft`.
-2. UI, trang test case: đọc từng test case, sửa nếu cần. Đúng thì duyệt thành `reviewed`. Sai thì để `draft` hoặc sửa.
+1. Nói: "Sinh test case cho tính năng X". Claude ghi test case mới ở trạng thái `draft`.
+2. Mở `features/<f>/testcases.json` và đọc từng test case. Cần sửa thì nói Claude sửa chỗ nào, hoặc tự sửa trong file.
+3. Đúng thì nói "duyệt TC_X" hoặc "duyệt hết". Sai thì để `draft`.
 
 AI chỉ chạy test case đã `reviewed`.
 
 ### Giai đoạn 3. AI chạy thử và xác nhận (điểm duyệt 2)
 
-1. Claude Code: `/run-testcase <tính năng> <id>`. AI mở trình duyệt, làm từng bước, chụp ảnh. Làm lần lượt từng test case.
-2. UI, trang đợt, khu "AI chạy thử": xem từng bước và ảnh, đọc kết quả AI đề xuất. Bấm "Xác nhận" hoặc "Từ chối", kèm ghi chú. Nghi có bug thì điền ô "Nghi bug", tool ghi vào `<đợt>/bugs.md`.
+1. Nói: "Chạy thử TC_X". Claude mở trình duyệt, làm từng bước, chụp ảnh. Nhiều test case thì Claude làm lần lượt.
+2. Claude báo kết quả AI đề xuất và đường dẫn `<đợt>/ai-run/<id>.md`. Mở file đọc. Xem ảnh từng bước trong `<đợt>/screenshots/<id>/`.
+3. Đồng ý thì nói "xác nhận TC_X". Không đồng ý thì nói "từ chối TC_X, lý do ...". Nghi có bug thì nói "nghi bug ..." kèm mô tả, Claude ghi vào `<đợt>/bugs.md`.
 
-Gặp OTP hay captcha, AI dừng và ghi "CẦN TESTER ĐĂNG NHẬP LẠI". Đăng nhập lại theo mục 5 rồi chạy lại lệnh.
+Gặp OTP hay captcha, AI dừng và ghi "CẦN TESTER ĐĂNG NHẬP LẠI". Đăng nhập lại theo mục 5 rồi nói "chạy thử lại TC_X".
 
 ### Giai đoạn 4. Chuyển sang Playwright
 
-1. Claude Code: `/to-playwright <tính năng> <id>`. Chỉ chuyển test case bạn đã xác nhận. AI tạo `tests/<f>/<id>.spec.ts` và chạy thử.
-2. UI, khu "Playwright": bấm "Chạy spec". Pass thì bấm "Đưa vào regression". Fail thì xem mục 8.
+1. Nói: "Chuyển TC_X sang Playwright". Claude chỉ chuyển test case bạn đã xác nhận. Claude tạo `tests/<f>/<id>.spec.ts` và chạy thử.
+2. Claude báo spec pass hay fail. Mở spec nếu muốn đọc.
+3. Spec pass và bạn đồng ý thì nói "đưa TC_X vào regression". Spec fail thì xem mục 8.
 
 ### Giai đoạn 5. So UI với Figma
 
-1. UI, khu "So UI với Figma": tick screen, bấm "Chụp và so".
-2. Claude Code: `/ui-check <tính năng> <screen>`. AI xem ảnh và ghi `report.md`.
-3. UI: với từng dòng "Sai khác đề xuất", chọn bug, chấp nhận hoặc cần xem. Bấm "Lưu quyết định".
-4. Khi UI khớp thiết kế, bấm "Cho tạo baseline". Cần có spec chứa `toHaveScreenshot('<screen>.png')` trong `tests/<f>/`. Còn dòng nào đánh dấu "Bug" thì tool chặn baseline. Báo bug, chờ sửa, chụp và so lại, hoặc đổi quyết định nếu đánh nhầm.
+1. Kéo ảnh Figma (mục 6) vào chat, nói screen nào. Claude chụp trang thật và so với ảnh. Nhiều screen thì nói rõ từng screen.
+2. Claude nhờ skill đọc ảnh và ghi `<đợt>/ui-diff/<screen>/report.md`. Claude liệt kê trong chat từng dòng "Sai khác đề xuất" kèm số mục.
+3. Trả lời từng mục là bug, chấp nhận hay cần xem. Ví dụ: "mục 1 chấp nhận, mục 2 bug lệch 8px, mục 3 cần xem". Đối chiếu ảnh trong `crops/` và `side_by_side.png` trước khi quyết.
+4. Khi UI khớp thiết kế, nói "tạo baseline <screen>". Cần có spec chứa `toHaveScreenshot('<screen>.png')` trong `tests/<f>/`, nhờ Claude viết nếu chưa có. Còn mục nào là "bug" thì baseline bị chặn. Báo bug, chờ sửa, rồi nói Claude chụp và so lại. Nếu đánh nhầm, đổi quyết định bằng cách trả lời lại số mục đó.
 
 ### Giai đoạn 6. Regression và tổng kết
 
-1. UI, khu "Playwright": bấm "Regression (chạy mọi spec)". Chạy hai lần liên tiếp, cả hai phải pass.
-2. Trang đợt, khu "Tổng kết đợt": bấm "Sinh lại từ dữ liệu của đợt", rồi điền "Kết luận của tester". Mục này chỉ bạn điền.
+1. Nói: "Chạy regression cho tính năng X". Claude chạy mọi spec của tính năng. Chạy hai lần liên tiếp, cả hai phải pass. Claude báo từng lần.
+2. Nói: "Tạo tổng kết đợt". Claude sinh lại `<đợt>/summary.md` từ dữ liệu của đợt.
+3. Nói kết luận bằng lời của bạn: "kết luận đợt: ...". Cho biết tên: "tôi là <tên>". Claude chép đúng lời bạn vào mục "Kết luận của tester". Claude không tự viết mục này.
 
 ## 5. Đăng nhập tay
 
 AI không được vượt SSO, OTP, captcha. Bạn đăng nhập, tool lưu phiên.
 
-1. Trang tính năng, khu Đăng nhập, bấm "Mở browser". Cửa sổ Chromium hiện ra.
-2. Đăng nhập như bình thường (tên, mật khẩu, OTP). Chờ vào đến trang chính.
-3. Bấm "Lưu phiên" trên UI. Phiên lưu ở `auth/<f>.json`, cửa sổ tự đóng.
+1. Nói: "Đăng nhập tính năng X". Một cửa sổ Chromium hiện ra trên máy bạn.
+2. Đăng nhập trên cửa sổ đó như bình thường (tên, mật khẩu, OTP). Chờ vào đến trang chính.
+3. Trả lời "xong" trong chat. Claude lưu phiên ở `auth/<f>.json`, cửa sổ tự đóng, rồi kiểm tra phiên dùng được.
 
-Dùng terminal thay UI: `npm run cli -- login --feature <f>`, đăng nhập xong bấm Enter. Kiểm tra phiên còn dùng được: `npm run cli -- check-session --feature <f> --url <url>`. Mã thoát 0 là còn dùng được.
+Không gõ mật khẩu hay OTP vào chat. Lỡ gõ thì đổi mật khẩu. Claude sẽ không dùng và không lặp lại giá trị đó.
 
 Đăng nhập lại khi:
 
 - Spec hoặc AI bị đẩy về trang đăng nhập.
 - AI báo "CẦN TESTER ĐĂNG NHẬP LẠI".
-- `check-session` báo không đạt.
-- Đã đổi tài khoản hoặc môi trường.
+- Claude báo kiểm tra phiên không đạt.
+- Bạn đã đổi tài khoản hoặc môi trường.
 
 Mỗi tính năng một phiên riêng. Không dùng chung giữa các tính năng.
 
@@ -130,42 +148,43 @@ Làm một lần cho mỗi screen.
 
 - Export frame ở tỉ lệ 1x, định dạng PNG.
 - Chiều rộng ảnh bằng đúng chiều rộng viewport của tính năng.
-- Đặt ở `features/<f>/figma/<screen>.png`. Tên file là tên screen trong `feature.json`.
-- Frame dài hơn viewport thì tick ô "Chụp cả trang" trước khi bấm "Chụp và so".
-- Export 2x thì đặt `scale: 2` cho screen đó. Nên dùng 1x.
+- Kéo ảnh vào chat và nói đó là screen nào. Claude chép vào `features/<f>/figma/<screen>.png`. Tên file là tên screen trong `feature.json`.
+- Frame dài hơn viewport thì nói: "chụp cả trang".
+- Export 2x thì nói Claude đặt `scale: 2` cho screen đó. Nên dùng 1x.
 - Ghi link frame và ngày export vào `features/<f>/figma/README.md` (bạn tự tạo, tool không đọc).
+
+Thiếu ảnh cho screen nào thì Claude báo và hỏi bạn. Claude không bỏ qua âm thầm.
 
 ## 7. Cách đọc kết quả
 
 | File | Là gì | Cách đọc |
 | --- | --- | --- |
 | `<đợt>/ai-run/<id>.md` | Báo cáo AI chạy thử | Đầu file có kết quả AI đề xuất (ĐẠT, KHÔNG ĐẠT, KHÔNG XÁC ĐỊNH). Bảng bên dưới: từng kết quả mong đợi, AI thấy gì, ảnh. Xem mục "Ghi chú cho tester" trước. Ảnh là bằng chứng, đối chiếu với kết luận |
-| `<đợt>/ui-diff/<screen>/report.md` | Sai khác UI AI đề xuất | Mỗi dòng có mức (Cao, Trung bình, Thấp) và phân loại. Mức Cao ảnh hưởng chức năng hoặc nhận diện. "Có thể chấp nhận" như dữ liệu mẫu khác nhau. Bạn quyết định từng dòng trên UI |
-| `<đợt>/summary.md` | Tổng kết đợt | Bảng test case, bảng sai khác UI, vấn đề kỹ thuật. "Kết luận của tester" bạn điền |
-| `<đợt>/playwright-report/` | Report Playwright | Mở ngay trong khu "Playwright". Test fail có ảnh và trace |
-| `<đợt>/playwright-log.txt` | Log lần chạy gần nhất | Tìm dòng bắt đầu bằng `Error:` và dòng có dấu `>` |
+| `<đợt>/ui-diff/<screen>/report.md` | Sai khác UI AI đề xuất | Mỗi dòng có mức (Cao, Trung bình, Thấp) và phân loại. Mức Cao ảnh hưởng chức năng hoặc nhận diện. "Có thể chấp nhận" như dữ liệu mẫu khác nhau. Bạn quyết định từng dòng qua chat |
+| `<đợt>/summary.md` | Tổng kết đợt | Bảng test case, bảng sai khác UI, vấn đề kỹ thuật. "Kết luận của tester" ghi theo lời bạn |
+| `<đợt>/playwright-log.txt` | Log lần chạy gần nhất | Tìm dòng bắt đầu bằng `Error:` và dòng có dấu `>`. Hoặc nhờ Claude tóm tắt lỗi |
 | `<đợt>/bugs.md` | Bug bạn nghi ngờ | Mỗi test case một mục |
 
-Mở trace của test fail: copy lệnh `npx playwright show-trace ...` ở khu "Playwright" và chạy trong terminal.
+`<đợt>/playwright-report/` và `<đợt>/test-results/` có thể chứa giá trị đã nhập (xem mục 2). Đừng mở chúng bằng Claude. Cần xem trace của test fail thì nhờ dev, đừng dán nội dung vào chat.
 
 Pixel diff chỉ khoanh vùng khác nhau. Nó không nói UI đạt hay không. Vùng đỏ có thể chỉ là dữ liệu động.
 
 ## 8. Khi spec fail
 
-Phân loại trước, rồi mới làm gì.
+Phân loại trước, rồi mới làm gì. Claude sẽ nhắc bạn phân loại.
 
 | Loại | Dấu hiệu | Việc làm |
 | --- | --- | --- |
-| Bug thật | Chức năng sai. Ảnh test-results cho thấy lỗi thật | Ghi vào `bugs.md`, báo dev. Không sửa spec |
-| Locator hỏng | Lỗi "không tìm thấy element" mà chức năng vẫn chạy bình thường. Nút đổi tên, đổi nhãn | Chạy `/heal-locator <f> <id>` trong Claude Code (lệnh có sẵn trên UI, khu "Sửa locator") |
-| UI đổi có chủ đích | Luồng hoặc màn hình khác thiết kế cũ | Cập nhật test case và use case, chạy lại `/run-testcase`, `/to-playwright` |
+| Bug thật | Chức năng sai. Ảnh lúc chạy cho thấy lỗi thật | Nói "nghi bug ..." để ghi vào `bugs.md`, báo dev. Không sửa spec |
+| Locator hỏng | Lỗi "không tìm thấy element" mà chức năng vẫn chạy bình thường. Nút đổi tên, đổi nhãn | Nói: "Sửa locator TC_X". Claude đề xuất bản sửa |
+| UI đổi có chủ đích | Luồng hoặc màn hình khác thiết kế cũ | Cập nhật test case và use case, rồi nói Claude chạy thử và chuyển Playwright lại |
 
 Với locator hỏng:
 
-1. Chạy `/heal-locator <f> <id>`. AI mở trang, tìm element tương đương, ghi `<đợt>/heal/<id>.diff` và `<id>.md`.
-2. UI, khu "Sửa locator": đọc diff (dòng đỏ bị xóa, dòng xanh thêm) và lý do.
-3. Chấp nhận thì bấm "Áp dụng và chạy lại". Tool lưu bản cũ ở `<đợt>/heal/<id>.spec.ts.bak`, sửa spec, chạy lại.
-4. Spec vẫn fail ở dòng khác thì chạy lại lệnh. Để quay về bản cũ, chép `.bak` đè lên `tests/<f>/<id>.spec.ts`.
+1. Claude mở trang, tìm element tương đương, ghi `<đợt>/heal/<id>.diff` và `<id>.md`. Claude hiện diff và lý do trong chat.
+2. Đọc diff (dòng `-` bị xóa, dòng `+` được thêm) và lý do.
+3. Chấp nhận thì nói "áp dụng sửa locator TC_X". Claude lưu bản cũ ở `<đợt>/heal/<id>.spec.ts.bak`, sửa spec, chạy lại.
+4. Spec vẫn fail ở dòng khác thì nói Claude đề xuất lại. Muốn quay về bản cũ thì nhờ Claude chép `.bak` đè lên `tests/<f>/<id>.spec.ts`.
 
 Tool từ chối áp dụng nếu diff đụng vào `expect(`, bỏ một bước, hoặc đổi dòng không phải locator. Khi đó đừng ép. Phân loại lại: nhiều khả năng là bug thật hoặc UI đổi.
 
@@ -175,8 +194,10 @@ AI không bao giờ sửa kết quả mong đợi để ép test pass.
 
 | Hiện tượng | Cách xử lý |
 | --- | --- |
-| Cổng 4173 bận | Dừng tiến trình cũ (tool in ra), chạy lại `npm start` |
-| Báo 409 "Playwright đang chạy" | Chờ xong hoặc bấm "Dừng". Mỗi lúc chỉ một lần chạy |
 | Spec chạy ra trang đăng nhập | Phiên hết hạn. Đăng nhập lại (mục 5) |
-| Không thấy lệnh `/gen-testcases` trong Claude Code | Mở Claude Code ở đúng thư mục project |
-| Thiếu ảnh Figma | UI báo cảnh báo ở screen đó. Export và đặt đúng đường dẫn (mục 6) |
+| Claude báo "CẦN TESTER ĐĂNG NHẬP LẠI" | Đăng nhập lại (mục 5), rồi nói chạy lại test case |
+| Claude từ chối đưa vào regression | Spec chưa pass ở lần chạy gần nhất. Nhờ Claude chạy lại spec, hoặc xem mục 8 |
+| Claude từ chối tạo baseline | Còn mục chưa quyết định, còn mục "bug", hoặc thiếu spec `toHaveScreenshot`. Đọc thông báo Claude đưa ra và làm theo |
+| Không thấy skill của project trong Claude Code | Mở Claude Code ở đúng thư mục project |
+| Thiếu ảnh Figma | Claude báo cảnh báo ở screen đó. Export và kéo ảnh vào chat (mục 6) |
+| Muốn thấy trình duyệt khi AI làm việc | Nói "Mở trình duyệt khi chạy". Muốn ẩn lại: "Chạy ẩn trình duyệt" |

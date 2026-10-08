@@ -37,7 +37,7 @@ export async function runStart(opts: RunStartOptions): Promise<RunStartResult> {
   const warnings: string[] = [];
   if (tc.status !== "reviewed") {
     const msg = `Test case ${opts.id} có status "${tc.status}", chỉ chạy test case "reviewed".`;
-    if (!opts.force) throw new Error(`${msg} Tester duyệt trên UI trước, hoặc dùng --force nếu tester đã đồng ý.`);
+    if (!opts.force) throw new Error(`${msg} Tester duyệt trước (lệnh testcase-status khi tester nói duyệt), hoặc dùng --force nếu tester đã đồng ý.`);
     warnings.push(`${msg} Đang chạy vì có --force.`);
   }
   if (tc.manual) {

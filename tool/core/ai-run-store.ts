@@ -80,7 +80,7 @@ export const lockTiming = { waitMs: 3000, staleMs: 30_000 };
 const sleepSync = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 /**
- * Khóa file `ai-run/<id>.json.lock` (tạo bằng cờ `wx`) quanh một lần đọc-sửa-ghi. Server và CLI là hai tiến trình
+ * Khóa file `ai-run/<id>.json.lock` (tạo bằng cờ `wx`) quanh một lần đọc-sửa-ghi. Nhiều lệnh CLI có thể chạy song song
  * khác nhau cùng ghi một file, nên khóa phải nằm trên đĩa. Chờ tối đa `lockTiming.waitMs`; khóa cũ hơn `lockTiming.staleMs`
  * (tiến trình giữ khóa đã chết) bị gỡ.
  */

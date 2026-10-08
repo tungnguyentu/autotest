@@ -28,6 +28,48 @@ export interface RunSpecResult {
   passed: boolean;
 }
 
+/** Thư mục đợt từ --run-dir, hoặc đợt mới nhất của tính năng. */
+export function pickRunDir(feature: string, runDir: string | undefined, opts?: PathOptions): string {
+  if (runDir) return resolveRunDirOption(runDir, opts);
+  const latest = listRunDirs(feature, opts)[0];
+  if (!latest) throw new Error(`Chưa có đợt nào của ${feature}. Chạy \`npm run cli -- evidence-dir --feature ${feature}\` trước hoặc truyền --run-dir.`);
+  return latest;
+}
+
+export interface RunPlaywrightOptions extends PathOptions {
+  feature: string;
+  /** Thư mục đợt (đường dẫn tuyệt đối đã kiểm tra). */
+  runDir: string;
+  /** Spec tương đối gốc project. Bỏ trống thì chạy mọi spec của tính năng (regression). */
+  spec?: string;
+  extraArgs?: string[];
+  env?: NodeJS.ProcessEnv;
+  onLine?: (line: string) => void;
+  command?: string;
+  onRunner?: (runner: PlaywrightRunner) => void;
+}
+
+/** Chạy Playwright qua runner của tool và chờ xong. Log và kết quả đã che credential. */
+export async function runPlaywright(opts: RunPlaywrightOptions): Promise<PlaywrightLast | null> {
+  const env = opts.env ?? process.env;
+  const print = opts.onLine ?? ((line: string) => console.log(line));
+  const runner = createPlaywrightRunner({
+    root: opts.root ?? PROJECT_ROOT,
+    env,
+    emit: (e) => {
+      if (e.type === "playwright-log") print(e.line);
+    },
+    command: opts.command ?? (env.PLAYWRIGHT_BIN || undefined),
+  });
+  opts.onRunner?.(runner);
+  return new Promise<PlaywrightLast | null>((resolve) => {
+    runner.start({ feature: opts.feature, runDir: opts.runDir, spec: opts.spec, extraArgs: opts.extraArgs, onFinish: resolve });
+  });
+}
+
+export const allPassed = (last: PlaywrightLast | null): boolean =>
+  Boolean(last && last.exit_code === 0 && !last.stopped && last.tests.length > 0 && last.tests.every((t) => t.status === "passed"));
+
 /**
  * Chạy `tests/<feature>/<id>.spec.ts` qua runner của tool: log che credential, `playwright-results.json` che
  * credential, kết quả vào `<đợt>/playwright-last.json`. Đây là đường duy nhất để AI chạy spec, vì chạy
@@ -36,31 +78,9 @@ export interface RunSpecResult {
 export async function runSpec(opts: RunSpecOptions): Promise<RunSpecResult> {
   const feature = assertFeatureName(opts.feature);
   if (!ID.test(opts.id)) throw new Error(`--id không hợp lệ: "${opts.id}". Chỉ dùng chữ, số, "-" và "_".`);
-  const root = opts.root ?? PROJECT_ROOT;
   const specRel = `tests/${feature}/${opts.id}.spec.ts`;
   if (!fs.existsSync(path.join(testsDir(feature, opts), `${opts.id}.spec.ts`))) throw new Error(`Không tìm thấy ${specRel}.`);
-
-  let runDir: string;
-  if (opts.runDir) runDir = resolveRunDirOption(opts.runDir, opts);
-  else {
-    const latest = listRunDirs(feature, opts)[0];
-    if (!latest) throw new Error(`Chưa có đợt nào của ${feature}. Chạy \`npm run cli -- evidence-dir --feature ${feature}\` trước hoặc truyền --run-dir.`);
-    runDir = latest;
-  }
-
-  const env = opts.env ?? process.env;
-  const print = opts.onLine ?? ((line: string) => console.log(line));
-  const runner = createPlaywrightRunner({
-    root,
-    env,
-    emit: (e) => {
-      if (e.type === "playwright-log") print(e.line);
-    },
-    command: opts.command ?? (env.PLAYWRIGHT_BIN || undefined),
-  });
-  opts.onRunner?.(runner);
-  const last = await new Promise<PlaywrightLast | null>((resolve) => {
-    runner.start({ feature, runDir, spec: specRel, onFinish: resolve });
-  });
+  const runDir = pickRunDir(feature, opts.runDir, opts);
+  const last = await runPlaywright({ ...opts, feature, runDir, spec: specRel });
   return { runDir, spec: specRel, last, passed: Boolean(last && last.exit_code === 0 && !last.stopped) };
 }

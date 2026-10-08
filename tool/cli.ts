@@ -10,7 +10,7 @@ const HELP = `Dùng: npm run cli -- <lệnh> [tùy chọn]
 Lệnh:
   login --feature <f> [--start /path] [--wait-flag]
       Mở Chromium có giao diện để tester đăng nhập tay, rồi lưu auth/<f>.json.
-      Bấm Enter để lưu. Với --wait-flag, tạo file auth/<f>.save cũng được.
+      Bấm Enter để lưu. Với --wait-flag, tạo file auth/<f>.save cũng được (Claude tạo khi tester báo đã đăng nhập xong).
   check-session --feature <f> --url <url> [--headed | --headless]
       Nạp auth/<f>.json bằng Playwright, mở URL, báo có còn đăng nhập không.
   evidence-dir --feature <f>
@@ -54,8 +54,30 @@ Lệnh:
   run-spec --feature <f> --id <TC> [--run-dir <d>]
       Chạy tests/<f>/<TC>.spec.ts qua runner của tool, in log đã che credential và ghi kết quả vào <đợt>/playwright-last.json.
       Dùng lệnh này thay cho "npx playwright test". Mã thoát 2 khi spec fail.
-  start
-      Chạy server và UI ở http://localhost:4173 (giống npm start).
+  status [--feature <f>] [--json]
+      Tiến độ từng tính năng: use case, test case theo trạng thái, phiên, đợt mới nhất, việc tiếp theo.
+
+Các lệnh ghi QUYẾT ĐỊNH CỦA TESTER. Claude chỉ chạy khi tester nói rõ trong chat:
+  testcase-status --feature <f> (--id <TC> ... | --all-draft) --status reviewed|draft
+      Duyệt hoặc bỏ duyệt test case. Chỉ đổi giữa draft và reviewed.
+  ai-decision --feature <f> --id <TC> --decision confirmed|rejected [--note <ghi chú>] [--bug <mô tả>] [--run-dir <d>]
+      Xác nhận hoặc từ chối kết quả AI chạy thử. Status thành ai-passed hoặc ai-failed. --bug ghi vào <đợt>/bugs.md.
+  automate --feature <f> --id <TC> [--run-dir <d>]
+      Đưa vào regression (ai-passed thành automated). Spec phải pass ở lần chạy gần nhất, sau lần sửa cuối.
+  heal-apply --feature <f> --id <TC> [--run-dir <d>]
+      Áp <đợt>/heal/<TC>.diff (chỉ đổi dòng locator), sao lưu spec, chạy lại spec.
+  ui-decision --feature <f> --screen <key> --item <số>=<bug|accept|review>[:ghi chú] ... [--run-dir <d>]
+      Quyết định từng mục trong bảng sai khác của ui-diff/<screen>/report.md.
+  baseline --feature <f> --screen <key> [--run-dir <d>]
+      Tạo baseline toHaveScreenshot cho screen. Bị chặn khi còn mục chưa quyết định hoặc còn mục bug.
+
+Chạy và tổng kết:
+  ui-diff --feature <f> [--run-dir <d>] [--screen <key> ...] [--full-page] [--headed | --headless]
+      Chụp các screen rồi so với ảnh Figma (capture và compare). Không có --run-dir thì tạo đợt mới.
+  regression --feature <f> [--run-dir <d>]
+      Chạy mọi spec trong tests/<f>/ qua runner của tool (log đã che credential).
+  summary --feature <f> [--run-dir <d>] [--tester <tên>] [--environment <môi trường>] [--build <bản>] [--conclusion <kết luận>]
+      Sinh lại <đợt>/summary.md. Kết luận chỉ ghi đúng lời tester nói.
   help
       In trợ giúp này.
 `;
@@ -334,7 +356,7 @@ async function main(argv: string[]): Promise<number> {
       console.log(`Đã ghi kết quả AI cho ${r.run.id} vào ${r.runDir}`);
       console.log(`Số step: ${r.run.steps.length}. Đề xuất: ${r.run.ai_result?.verdict}`);
       for (const e of r.run.ai_result?.per_expected ?? []) console.log(`  - [${e.verdict}] ${e.expected}`);
-      console.log("Status test case không đổi. Tester duyệt kết quả trên UI.");
+      console.log("Status test case không đổi. Tester xem kết quả rồi nói xác nhận hay từ chối (lệnh ai-decision).");
       return 0;
     }
     case "validate-testcases": {
@@ -440,10 +462,149 @@ async function main(argv: string[]): Promise<number> {
       console.log(`Báo cáo    : ${r.runDir}/playwright-report/index.html (có thể chứa giá trị đã nhập, không gửi đi)`);
       return r.passed ? 0 : 2;
     }
-    case "start": {
-      const { main: startMain } = await import("./server.ts");
-      await startMain();
-      return await new Promise<number>(() => {}); // server giữ tiến trình sống đến khi nhận SIGINT hoặc SIGTERM
+    case "status": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, json: { type: "boolean", default: false } } });
+      const { featureStatus } = await import("./core/status.ts");
+      const { listFeatures } = await import("./core/feature-store.ts");
+      const names = values.feature ? [requireFeature(values.feature)] : listFeatures();
+      if (!names.length) console.log("Chưa có tính năng nào trong features/.");
+      for (const name of names) {
+        const st = featureStatus(name);
+        if (values.json) {
+          console.log(JSON.stringify(st, null, 2));
+          continue;
+        }
+        const c = st.testcases.counts;
+        console.log(`== ${name}: ${st.feature.service} (${st.feature.baseURL})`);
+        console.log(`  Use case   : ${st.usecases.length ? st.usecases.map((u) => u.name).join(", ") : "chưa có"}`);
+        console.log(`  Test case  : ${st.testcases.total} (draft ${c.draft}, reviewed ${c.reviewed}, ai-passed ${c["ai-passed"]}, ai-failed ${c["ai-failed"]}, automated ${c.automated})${st.testcases.error ? ` LỖI: ${st.testcases.error}` : ""}`);
+        console.log(`  Đăng nhập  : ${st.session ? `phiên lưu lúc ${st.session.saved_at}` : "chưa có phiên"}`);
+        console.log(`  Đợt mới nhất: ${st.latest_run ?? "chưa có"}`);
+        for (const k of st.cases) {
+          const ai = k.ai_run ? `AI ${k.ai_run.verdict ?? "chưa xong"}${k.ai_run.decision ? `, tester ${k.ai_run.decision}` : ""}` : "chưa chạy thử";
+          console.log(`    ${k.id} [${k.status}] ${k.title} | ${ai} | spec ${k.has_spec ? (k.spec_result ?? "chưa chạy") : "chưa có"}`);
+        }
+        console.log(`  Việc tiếp theo: ${st.next_step}`);
+      }
+      return 0;
+    }
+    case "testcase-status": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, id: { type: "string", multiple: true }, "all-draft": { type: "boolean", default: false }, status: { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      if (values.status !== "reviewed" && values.status !== "draft") throw new UsageError("--status phải là reviewed hoặc draft.");
+      const { readTestCases } = await import("./core/feature-store.ts");
+      const { setTestcaseStatus } = await import("./core/review.ts");
+      const ids = values["all-draft"] ? readTestCases(feature).filter((t) => t.status === "draft").map((t) => t.id) : (values.id ?? []).flatMap((x) => x.split(",")).map((x) => x.trim()).filter(Boolean);
+      if (!ids.length) throw new UsageError("Thiếu --id <mã> (lặp lại hoặc ngăn bằng dấu phẩy) hoặc --all-draft.");
+      const changed = setTestcaseStatus(feature, ids, values.status);
+      console.log(changed.length ? `Đã đổi sang ${values.status}: ${changed.map((t) => t.id).join(", ")}` : "Không có test case nào cần đổi.");
+      return 0;
+    }
+    case "ai-decision": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, id: { type: "string" }, decision: { type: "string" }, note: { type: "string" }, bug: { type: "string" }, "run-dir": { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      if (!values.id) throw new UsageError("Thiếu --id <test case>.");
+      if (values.decision !== "confirmed" && values.decision !== "rejected") throw new UsageError("--decision phải là confirmed hoặc rejected.");
+      const { findRunDirOfAiRun } = await import("./core/ai-run-store.ts");
+      const { decideAiRun } = await import("./core/review.ts");
+      const runDir = findRunDirOfAiRun(feature, values.id, values["run-dir"]);
+      const r = decideAiRun(feature, runDir, values.id, { decision: values.decision, note: values.note, suspectedBug: values.bug });
+      console.log(`${r.id}: tester ${r.decision}, status ${r.status} (đợt ${path.basename(runDir)})${r.bug_recorded ? `. Đã ghi bug vào ${path.join(runDir, "bugs.md")}` : ""}`);
+      return 0;
+    }
+    case "automate": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, id: { type: "string" }, "run-dir": { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      if (!values.id) throw new UsageError("Thiếu --id <test case>.");
+      const { pickRunDir } = await import("./cli/run-spec.ts");
+      const { automateTestcase } = await import("./core/review.ts");
+      const t = automateTestcase(feature, pickRunDir(feature, values["run-dir"]), values.id);
+      console.log(`${t.id}: đã đưa vào regression (status automated).`);
+      return 0;
+    }
+    case "heal-apply":
+    case "regression":
+    case "baseline": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, id: { type: "string" }, screen: { type: "string" }, "run-dir": { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      const { pickRunDir, runPlaywright, allPassed } = await import("./cli/run-spec.ts");
+      const { installProcessCleanup } = await import("./core/process-group.ts");
+      const runDir = pickRunDir(feature, values["run-dir"]);
+      let stop = async () => {};
+      const uninstall = installProcessCleanup(() => stop());
+      const onRunner = (runner: { stop: () => Promise<unknown> }) => {
+        stop = async () => void (await runner.stop());
+      };
+      const report = (last: import("./core/schemas.ts").PlaywrightLast | null) => {
+        console.log(`Kết quả    : ${allPassed(last) ? "PASS" : last?.stopped ? "BỊ DỪNG" : `FAIL (mã thoát ${last?.exit_code ?? "không rõ"})`}`);
+        for (const t of last?.tests ?? []) console.log(`  - [${t.status}] ${t.file}: ${t.title}`);
+      };
+      try {
+        console.log(`Thư mục đợt: ${runDir}`);
+        if (command === "heal-apply") {
+          if (!values.id) throw new UsageError("Thiếu --id <test case>.");
+          const { applyHeal } = await import("./core/heal-apply.ts");
+          const r = await applyHeal({ feature, runDir, id: values.id, onRunner });
+          console.log(`Đã áp đề xuất sửa locator vào tests/${feature}/${values.id}.spec.ts. Bản cũ: ${r.backup}`);
+          report(r.last);
+          return r.passed ? 0 : 2;
+        }
+        if (command === "regression") {
+          const last = await runPlaywright({ feature, runDir, onRunner });
+          report(last);
+          return allPassed(last) ? 0 : 2;
+        }
+        if (!values.screen) throw new UsageError("Thiếu --screen <key>.");
+        const { createBaseline } = await import("./core/ui-diff-gates.ts");
+        const r = await createBaseline({ feature, runDir, screen: values.screen, onRunner });
+        console.log(`Đã tạo baseline ${r.baseline.screenshot} từ ${r.baseline.spec}.${r.restored.length ? ` Giữ nguyên baseline của screen khác: ${r.restored.join(", ")}.` : ""}`);
+        return 0;
+      } finally {
+        uninstall();
+      }
+    }
+    case "ui-diff": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, "run-dir": { type: "string" }, screen: { type: "string", multiple: true }, "full-page": { type: "boolean", default: false }, headed: { type: "boolean" }, headless: { type: "boolean" } } });
+      const feature = requireFeature(values.feature);
+      const { resolveEvidencePath } = await import("./core/ai-run-store.ts");
+      const { runUiDiff } = await import("./core/ui-diff-gates.ts");
+      const runDir = values["run-dir"] ? resolveEvidencePath(values["run-dir"], "--run-dir") : createRunDir(feature);
+      console.log(`Thư mục đợt: ${runDir}`);
+      const results = await runUiDiff({ feature, runDir, screens: values.screen, fullPage: values["full-page"], headed: headedFlag(values) });
+      for (const r of results) {
+        console.log(`[${r.screen}] ${r.captured ? "đã chụp" : "KHÔNG chụp được"}${r.compared ? `, đã so: ${r.regions} vùng khác, diff_ratio ${((r.diff_ratio ?? 0) * 100).toFixed(2)}%` : ", chưa so"}`);
+        for (const w of r.warnings) console.log(`    CẢNH BÁO: ${w}`);
+      }
+      return results.every((r) => r.captured) ? 0 : 2;
+    }
+    case "ui-decision": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, "run-dir": { type: "string" }, screen: { type: "string" }, item: { type: "string", multiple: true } } });
+      const feature = requireFeature(values.feature);
+      if (!values.screen) throw new UsageError("Thiếu --screen <key>.");
+      const { pickRunDir } = await import("./cli/run-spec.ts");
+      const { saveUiDecisions } = await import("./core/ui-diff-gates.ts");
+      const { DECISION_VALUES } = await import("./core/schemas.ts");
+      const items = (values.item ?? []).map((raw) => {
+        const m = /^(\d+)=([a-z]+)(?::(.*))?$/s.exec(raw.trim());
+        if (!m || !(DECISION_VALUES as readonly string[]).includes(m[2]!)) {
+          throw new UsageError(`--item "${raw}" sai dạng. Dùng <số mục>=<${DECISION_VALUES.join("|")}>[:ghi chú], ví dụ 2=bug:lệch 8px.`);
+        }
+        return { index: Number(m[1]), decision: m[2] as (typeof DECISION_VALUES)[number], note: m[3] ?? "" };
+      });
+      if (!items.length) throw new UsageError("Thiếu --item <số mục>=<quyết định>.");
+      const d = saveUiDecisions(pickRunDir(feature, values["run-dir"]), values.screen, items);
+      console.log(`Đã lưu quyết định ${d.items.length} mục cho ${values.screen}: ${d.items.map((i) => `${i.index}=${i.decision}`).join(", ")}`);
+      return 0;
+    }
+    case "summary": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, "run-dir": { type: "string" }, tester: { type: "string" }, environment: { type: "string" }, build: { type: "string" }, conclusion: { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      const { pickRunDir } = await import("./cli/run-spec.ts");
+      const { writeSummary } = await import("./core/summary.ts");
+      const runDir = pickRunDir(feature, values["run-dir"]);
+      writeSummary(feature, runDir, { tester: values.tester, environment: values.environment, build: values.build, conclusion: values.conclusion });
+      console.log(`Đã ghi ${path.join(runDir, "summary.md")}`);
+      return 0;
     }
     default:
       throw new UsageError(`Lệnh không tồn tại: ${command}`);

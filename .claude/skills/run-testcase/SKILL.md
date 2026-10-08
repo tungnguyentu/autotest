@@ -82,7 +82,7 @@ Nếu snapshot hoặc URL cho thấy trang đăng nhập, SSO, ô OTP hoặc cap
 
 ### 6. Kết thúc
 
-Ghi file kết quả tạm vào thư mục đợt (`RUN` là thư mục đợt mà `run-start` đã in). `run-finish` chỉ nhận file nằm trong thư mục đợt hoặc trong project, và từ chối `.env` và `auth/`. Đuôi `.tmp` để UI bỏ qua file này:
+Ghi file kết quả tạm vào thư mục đợt (`RUN` là thư mục đợt mà `run-start` đã in). `run-finish` chỉ nhận file nằm trong thư mục đợt hoặc trong project, và từ chối `.env` và `auth/`. Đuôi `.tmp` cho biết đây là file tạm:
 
 ```bash
 RESULT="RUN/ai-result-ID.tmp"
@@ -102,7 +102,7 @@ rm -f "$RESULT"
 
 Rồi viết `<đợt>/ai-run/ID.md` theo mục "AI run" của `.claude/skills/_shared/report-template.md`: bảng expected với ảnh, danh sách step (đọc từ `ai-run/ID.json`, credential hiển thị dạng `<secret:KEY>`), ghi chú cho tester về chỗ bất thường và nghi ngờ bug. Để trống mục xác nhận của tester.
 
-Trả lời ngắn: thư mục đợt, verdict đề xuất, các điểm bất thường. Bước tiếp: tester xem kết quả trên UI.
+Trả lời ngắn: thư mục đợt, verdict đề xuất, các điểm bất thường. Gửi tester đường dẫn `ai-run/ID.md` và ảnh từng step, tóm tắt từng kết quả mong đợi. Bước tiếp: tester nói "xác nhận ID" hoặc "từ chối ID, lý do ..." (có thể kèm mô tả bug). Khi đó chạy `npm run cli -- ai-decision --feature F --id ID --decision confirmed|rejected [--note ...] [--bug ...]`.
 
 ## Không được làm
 

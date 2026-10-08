@@ -11,7 +11,7 @@ export interface FeatureInitOptions extends PathOptions {
   auth?: boolean;
 }
 
-/** Tạo features/<f>/feature.json từ một URL, khi tester làm việc bằng chat thay vì UI. Không ghi đè. */
+/** Tạo features/<f>/feature.json từ một URL, khi tester làm việc qua chat. Không ghi đè. */
 export function featureInit(opts: FeatureInitOptions): { file: string; feature: Feature } {
   const file = featureFile(opts.feature, opts);
   if (fs.existsSync(file)) throw new Error(`Đã có ${file}. Sửa file đó thay vì tạo lại.`);

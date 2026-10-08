@@ -1,13 +1,13 @@
 ---
 name: ui-check
-description: Đánh giá bằng mắt sự khác nhau giữa ảnh Figma và ảnh chụp thật của một screen, theo checklist bảy mục, rồi ghi report.md đề xuất cho tester. Dùng khi người dùng gõ /ui-check <feature> [screen], hoặc nhờ "so UI với Figma", "đọc ảnh diff", "đánh giá sai khác giao diện", "design QA", sau khi đã bấm "Chụp và so" trên UI của tool.
+description: Đánh giá bằng mắt sự khác nhau giữa ảnh Figma và ảnh chụp thật của một screen, theo checklist bảy mục, rồi ghi report.md đề xuất cho tester. Dùng khi người dùng gõ /ui-check <feature> [screen], hoặc nhờ "so UI với Figma", "đọc ảnh diff", "đánh giá sai khác giao diện", "design QA".
 ---
 
 # ui-check: đọc ảnh so Figma và ghi report.md
 
-Lệnh: `/ui-check <feature> [screen]`. Bỏ trống `screen` thì làm lần lượt mọi screen đã có `metrics.json` trong đợt mới nhất. Kết quả là ĐỀ XUẤT. Tester quyết định từng mục trên UI. Mẫu báo cáo: mục "UI diff" trong `.claude/skills/_shared/report-template.md`. Checklist chi tiết: `references/checklist.md`.
+Lệnh: `/ui-check <feature> [screen]`. Bỏ trống `screen` thì làm lần lượt mọi screen đã có `metrics.json` trong đợt mới nhất. Kết quả là ĐỀ XUẤT. Tester quyết định từng mục trong chat. Mẫu báo cáo: mục "UI diff" trong `.claude/skills/_shared/report-template.md`. Checklist chi tiết: `references/checklist.md`.
 
-Skill này không chụp và không so ảnh. Việc đó do tool làm (nút "Chụp và so" trên trang đợt, hoặc `npm run cli -- capture` rồi `compare`). Pixel diff chỉ khoanh vùng, không phải tiêu chí đạt hay không đạt.
+Skill này không chụp và không so ảnh. Việc đó do lệnh `npm run cli -- ui-diff --feature <feature> [--screen <key>]` làm (chụp rồi so). Chưa có kết quả so thì chạy lệnh này trước. Pixel diff chỉ khoanh vùng, không phải tiêu chí đạt hay không đạt.
 
 ## Quy trình
 
@@ -19,11 +19,11 @@ ls -dt "${EVIDENCE_ROOT:-evidence}"/????-??-??_<feature>/ui-diff/<screen>/metric
 
 Thư mục screen là thư mục chứa file đó. Dừng, không đoán, không tự chụp, nếu:
 
-- Không có `metrics.json`: nói rõ chưa có kết quả so. Hướng dẫn tester mở trang đợt trên UI (http://localhost:4173), khu "So UI với Figma", tick screen, bấm "Chụp và so", rồi gõ lại lệnh. Nếu `meta.json` có cảnh báo (thiếu ảnh Figma, thiếu phiên đăng nhập, chuyển hướng), nêu đúng cảnh báo đó.
+- Không có `metrics.json`: nói rõ chưa có kết quả so. Chạy `npm run cli -- ui-diff --feature <feature> --screen <screen>` rồi làm tiếp. Nếu `meta.json` có cảnh báo (thiếu ảnh Figma, thiếu phiên đăng nhập, chuyển hướng), nêu đúng cảnh báo đó.
 - `figma.png` hoặc `actual.png` không có trong thư mục: báo thiếu file nào.
 - `metrics.json.warnings` có "Chiều rộng lệch": ảnh không cùng khung, mọi vùng diff có thể sai. Vẫn đọc ảnh nhưng ghi cảnh báo này ở đầu report và hạ mức tự tin của mọi dòng.
 
-Đã có `report.md` trong thư mục screen: hỏi tester có muốn thay không. Đừng ghi đè khi chưa được đồng ý. Khi đã ghi đè thì để nguyên `decisions.json`: nó lưu mã băm của `report.md` lúc tester lưu, nên khi nội dung report đổi, tool coi quyết định cũ là hết hiệu lực, UI báo "report đã đổi, cần quyết định lại" và chưa cho tạo baseline. Đừng tự xóa hay sửa file này.
+Đã có `report.md` trong thư mục screen: hỏi tester có muốn thay không. Đừng ghi đè khi chưa được đồng ý. Khi đã ghi đè thì để nguyên `decisions.json`: nó lưu mã băm của `report.md` lúc tester lưu, nên khi nội dung report đổi, tool coi quyết định cũ là hết hiệu lực, tester cần quyết định lại và chưa tạo được baseline. Đừng tự xóa hay sửa file này.
 
 ### 2. Đọc dữ liệu
 
@@ -64,7 +64,7 @@ Không có sai khác nào cũng vẫn ghi report với bảng chỉ có dòng ti
 
 ### 6. Trả lời tester
 
-Ngắn gọn: đường dẫn `report.md`, số sai khác theo mức (Cao, Trung bình, Thấp) và số mục chấp nhận hoặc cần xác nhận, cảnh báo kỹ thuật, screen bị bỏ qua và lý do. Nhắc tester mở trang đợt, chọn bug, chấp nhận hoặc cần xem cho từng dòng, bấm "Lưu quyết định". Chưa có tổng kết đợt thì nhắc bấm "Sinh lại từ dữ liệu của đợt" để `summary.md` cập nhật số sai khác. Không tự sửa `summary.md`.
+Ngắn gọn: đường dẫn `report.md`, số sai khác theo mức (Cao, Trung bình, Thấp) và số mục chấp nhận hoặc cần xác nhận, cảnh báo kỹ thuật, screen bị bỏ qua và lý do. Liệt kê từng dòng của bảng sai khác (số mục, mô tả, mức). Nhắc tester trả lời mỗi mục là bug, chấp nhận hay cần xem, ví dụ "1 chấp nhận, 2 bug lệch 8px, 3 cần xem". Khi tester trả lời, chạy `npm run cli -- ui-decision --feature <feature> --screen <screen> --item 1=accept --item "2=bug:lệch 8px" --item 3=review`. Sau đó chạy `npm run cli -- summary --feature <feature>` để `summary.md` cập nhật số sai khác. Không tự sửa `summary.md`.
 
 ## Không được làm
 
