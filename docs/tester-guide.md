@@ -4,20 +4,22 @@ Bạn chỉ chat với Claude Code. Bạn không cần gõ lệnh, không cần 
 
 ## 1. Cài đặt (làm một lần)
 
-1. Cài Node 26 trở lên, git, và Claude Code. Đăng nhập Claude Code bằng tài khoản của bạn.
-2. Mở Claude Code ở thư mục bạn muốn để project, rồi chat:
+1. Mở Terminal (macOS: Spotlight, gõ Terminal). Dán lệnh sau rồi bấm Enter:
 
-   ```
-   Clone https://github.com/tungnguyentu/autotest.git, cài đặt theo docs/tester-guide.md
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/tungnguyentu/autotest/master/install.sh | bash
    ```
 
-   Claude tải project, chạy `npm ci` và cài trình duyệt Chromium cho Playwright.
-3. Thoát Claude Code, mở lại ngay trong thư mục `autotest`. Từ lúc này Claude đọc được quy tắc của project và các skill.
-4. agent-browser (trình duyệt AI dùng khi chạy thử test case và bấm thử link): nhờ Claude kiểm tra đã cài chưa. Bản đang dùng là 0.34.
+   Script cài những gì máy còn thiếu: git, Node 26, thư viện của project, Chromium cho Playwright, agent-browser, Claude Code. Project được tải về thư mục `~/autotest`. Mất khoảng 5 đến 10 phút lần đầu.
+2. macOS chưa có git: một hộp thoại cài Command Line Tools hiện ra. Bấm Install, chờ xong, rồi dán lại lệnh ở bước 1.
+3. Script báo "Cài đặt xong": mở Terminal mới, chạy `cd ~/autotest && claude`. Lần đầu, đăng nhập Claude Code bằng tài khoản của bạn.
+4. Từ đây chỉ cần chat. Lần sau mở lại: `cd ~/autotest && claude`.
+
+Script báo lỗi: chụp màn hình Terminal gửi cho người phát triển. Chạy lại script nhiều lần không sao, thứ đã cài thì được bỏ qua.
 
 ## 2. Cập nhật tool
 
-Khi người phát triển báo có bản mới, nói với Claude: "cập nhật tool". Claude tải bản mới và cài lại thư viện.
+Khi người phát triển báo có bản mới, nói với Claude: "cập nhật tool". Hoặc tự chạy trong Terminal: `cd ~/autotest && bash update.sh`. Script tải bản mới, in danh sách thay đổi, rồi cài lại những gì bản mới cần.
 
 - Dữ liệu của bạn không bị đụng tới khi cập nhật: tính năng, use case, test case, spec (`features/`, `tests/`), kết quả các đợt (`evidence/`), phiên đăng nhập (`auth/`). Git bỏ qua các thư mục này.
 - Dữ liệu này chỉ có trên máy bạn, không lên GitHub. Muốn đưa cho tester khác thì nén thư mục tính năng gửi riêng, trừ file `.env` và thư mục `auth/`.

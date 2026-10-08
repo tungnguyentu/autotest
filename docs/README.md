@@ -13,12 +13,11 @@ Cách dùng: xem mục [Cách dùng](#cách-dùng).
 
 ## Cài đặt
 
-```bash
-npm ci
-npx playwright install chromium
-```
+Máy tester: `bash install.sh` (hoặc `curl -fsSL https://raw.githubusercontent.com/tungnguyentu/autotest/master/install.sh | bash` khi chưa có project). Script kiểm tra và cài những gì còn thiếu: git, Node 26 (qua fnm, không cần sudo), `npm ci`, Chromium cho Playwright, agent-browser 0.34.0, Claude Code. Hỗ trợ macOS và Linux có apt, dnf hoặc yum. Máy đã dùng fnm với bản Node khác: script chỉ cài thêm Node 26, không đổi bản mặc định.
 
-Cần Node 26 trở lên. Không cần Python. Khi tester chat, Claude tự cài nếu chưa có `node_modules/`. Dùng `npm ci`, không dùng `npm install`, để `package-lock.json` trên máy tester không đổi.
+Cập nhật trên máy tester: `bash update.sh`. Script dừng nếu file của tool bị sửa, tải bản mới bằng `git pull --ff-only`, rồi chạy lại `install.sh` của bản mới.
+
+Dùng `npm ci`, không dùng `npm install`, để `package-lock.json` trên máy tester không đổi. Đổi phiên bản Node, agent-browser hay thêm công cụ hệ thống: sửa `install.sh` và `.node-version`, vì tester nhận thay đổi qua `update.sh`.
 
 ## Cách dùng
 
