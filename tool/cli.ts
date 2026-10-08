@@ -36,6 +36,13 @@ Lệnh:
   compare --dir <đợt>/ui-diff/<screen> [--scale <n>] [--threshold 20] [--cell 16] [--cell-ratio 0.03] [--max-regions 15] [--pad 16]
       So figma.png với actual.png: ghi diff.png, side_by_side.png, crops/region_NN.png và metrics.json.
       Pixel diff chỉ khoanh vùng, không phải kết luận.
+  feature-init --feature <f> --url <url> [--service <tên>] [--screen <key>] [--auth]
+      Tạo features/<f>/feature.json từ URL (baseURL là origin, một screen theo đường dẫn). Không ghi đè.
+  audit --feature <f> [--run-dir <đợt>] [--screen <key> ...] [--viewport 1440x900 ...] [--headed]
+      Kiểm tra giao diện không cần Figma: mỗi screen, mỗi viewport (mặc định desktop và mobile 390x844),
+      mỗi theme trong feature.json (sáng, tối). Ghi <đợt>/ui-audit/<screen>/shots/, review/ (ảnh sáng và tối
+      cạnh nhau để xem) và checks.json (tương phản, tràn ngang, ảnh, tiêu đề, link, console, request lỗi,
+      nút đổi theme). Không có --run-dir thì tạo đợt mới. Chỉ đo, không kết luận.
   run-spec --feature <f> --id <TC> [--run-dir <d>]
       Chạy tests/<f>/<TC>.spec.ts qua runner của tool, in log đã che credential và ghi kết quả vào <đợt>/playwright-last.json.
       Dùng lệnh này thay cho "npx playwright test". Mã thoát 2 khi spec fail.
@@ -90,6 +97,87 @@ async function main(argv: string[]): Promise<number> {
       console.log(`Có ô mật khẩu  : ${r.passwordFieldVisible ? "có" : "không"}`);
       console.log(r.ok ? "KẾT QUẢ: ĐẠT (phiên còn dùng được)" : "KẾT QUẢ: KHÔNG ĐẠT (có vẻ đã về trang đăng nhập)");
       return r.ok ? 0 : 2;
+    }
+    case "feature-init": {
+      const { values } = parseArgs({
+        args: rest,
+        options: {
+          feature: { type: "string" },
+          url: { type: "string" },
+          service: { type: "string" },
+          screen: { type: "string" },
+          auth: { type: "boolean", default: false },
+        },
+      });
+      if (!values.url) throw new UsageError("Thiếu --url <địa chỉ trang>.");
+      const { featureInit } = await import("./cli/feature-init.ts");
+      const { file, feature } = featureInit({
+        feature: requireFeature(values.feature),
+        url: values.url,
+        service: values.service,
+        screen: values.screen,
+        auth: values.auth,
+      });
+      console.log(`Đã tạo ${path.relative(process.cwd(), file)}`);
+      console.log(JSON.stringify(feature, null, 2));
+      return 0;
+    }
+    case "audit": {
+      const { values } = parseArgs({
+        args: rest,
+        options: {
+          feature: { type: "string" },
+          "run-dir": { type: "string" },
+          screen: { type: "string", multiple: true },
+          viewport: { type: "string", multiple: true },
+          headed: { type: "boolean", default: false },
+        },
+      });
+      const feature = requireFeature(values.feature);
+      const { auditScreens, parseViewport } = await import("./cli/audit.ts");
+      const { resolveEvidencePath } = await import("./core/ai-run-store.ts");
+      let viewports;
+      try {
+        viewports = values.viewport?.map(parseViewport);
+      } catch (err) {
+        throw new UsageError((err as Error).message);
+      }
+      const runDir = values["run-dir"] ? resolveEvidencePath(values["run-dir"], "--run-dir") : createRunDir(feature);
+      console.log(`Thư mục đợt: ${runDir}`);
+      const results = await auditScreens({ feature, runDir, screens: values.screen, viewports, headed: values.headed });
+      let broken = 0;
+      for (const r of results) {
+        console.log(`\n== ${r.screen}: ${r.url}`);
+        for (const w of r.warnings) console.log(`  CẢNH BÁO: ${w}`);
+        for (const v of r.variants) {
+          const c = v.checks as any;
+          if (!c) broken++;
+          const parts = c
+            ? [
+                `hiển thị ${c.shown_theme}`,
+                `tương phản thấp ${c.contrast.failures}`,
+                `tràn ngang ${c.page.horizontal_scroll ? "CÓ" : "không"}`,
+                `ảnh hỏng ${c.images.broken.length}`,
+                `H1 ${c.headings.h1.length}`,
+                `link không đích ${c.links.no_target.length}`,
+                `rel sai ${c.links.bad_rel.length}`,
+                `console ${v.console.length}`,
+                `lỗi JS ${v.page_errors.length}`,
+                `request lỗi ${v.failed_requests.length}`,
+              ]
+            : ["không đo được"];
+          console.log(`  [${v.viewport} / ${v.theme}] ${parts.join(", ")}`);
+          for (const w of v.warnings) console.log(`    CẢNH BÁO: ${w}`);
+        }
+        if (r.theme_toggle) {
+          const t = r.theme_toggle;
+          console.log(`  Nút đổi theme: ${t.error ? `lỗi: ${t.error}` : `đổi được ${t.switched ? "có" : "KHÔNG"}, nhớ sau tải lại ${t.remembered ? "có" : "KHÔNG"}`}`);
+        }
+        if (r.os_dark_preference) console.log(`  Hệ điều hành chọn tối, chưa chọn theme: trang hiển thị ${r.os_dark_preference.shown_theme}`);
+        console.log(`  Kết quả: ${path.join(runDir, "ui-audit", r.screen, "checks.json")}`);
+        console.log(`  Ảnh để xem: ${r.review_images.length} file trong ${path.join(runDir, "ui-audit", r.screen, "review")}`);
+      }
+      return broken ? 2 : 0;
     }
     case "evidence-dir": {
       const { values } = parseArgs({ args: rest, options: { feature: { type: "string" } } });

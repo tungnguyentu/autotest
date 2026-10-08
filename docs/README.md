@@ -84,6 +84,8 @@ Mọi lệnh chạy qua `npm run cli -- <lệnh>`.
 | `capture --feature <f> --out <đợt>/ui-diff [--screen <key> ...] [--full-page] [--headed]` | Chụp các screen trong `feature.json` bằng Playwright (viewport của tính năng, `deviceScaleFactor` 1, phiên `auth/<f>.json` khi screen `auth`, chờ `networkidle` và font). Ghi `<screen>/actual.png`, `figma.png` (bản sao) và `meta.json`. Thiếu ảnh Figma, thiếu phiên hoặc bị chuyển hướng là cảnh báo trong `meta.json`. Mã thoát 2 nếu có screen không chụp được |
 | `compare --dir <đợt>/ui-diff/<screen> [--scale <n>] [--threshold 20] [--cell 16] [--cell-ratio 0.03] [--max-regions 15] [--pad 16]` | So `figma.png` với `actual.png`, ghi `diff.png`, `side_by_side.png`, `crops/region_NN.png`, `metrics.json`. Nút "Chụp và so" trên UI chạy cùng hai bước này |
 | `run-spec --feature <f> --id <TC> [--run-dir <d>]` | Chạy `tests/<f>/<TC>.spec.ts` qua runner của tool: log in ra đã che credential, `playwright-results.json` được che sau lần chạy, kết quả vào `<đợt>/playwright-last.json`. Mã thoát 0 là pass, 2 là fail. Skill dùng lệnh này thay cho `npx playwright test` |
+| `feature-init --feature <f> --url <url> [--service <tên>] [--screen <key>] [--auth]` | Tạo `features/<f>/feature.json` từ URL, không cần UI. Không ghi đè |
+| `audit --feature <f> [--run-dir <đợt>] [--screen <key> ...] [--viewport 1440x900 ...] [--headed]` | Kiểm tra giao diện không cần Figma, theo theme trong `feature.json` và viewport (mặc định desktop và mobile 390x844). Ghi `<đợt>/ui-audit/<screen>/` gồm `checks.json`, `shots/`, `review/`. Xem [schemas.md](./schemas.md) |
 | `validate-testcases --feature <f>` | Kiểm tra `testcases.json` theo schema, in thống kê và cảnh báo |
 | `help` | In trợ giúp |
 
@@ -99,6 +101,7 @@ Skill nằm ở `.claude/skills/`. Tester gõ lệnh trong Claude Code mở ở 
 | `/run-testcase <feature> <id>` | AI chạy thử test case `reviewed` bằng agent-browser, ghi `ai-run/<id>.json`, ảnh từng step và `ai-run/<id>.md` |
 | `/ui-check <feature> [screen]` | Đọc `metrics.json`, xem `side_by_side.png` và từng crop, đối chiếu checklist bảy mục, ghi `ui-diff/<screen>/report.md` với bảng sai khác đề xuất. Để trống mục "Quyết định của tester". Cần chạy "Chụp và so" trên UI trước |
 | `/to-playwright <feature> <id>` | Chuyển ai-run đã được tester xác nhận (`tester.decision = "confirmed"`) thành `tests/<feature>/<id>.spec.ts`, chạy thử và báo kết quả |
+| `/ui-audit <url hoặc feature> [screen]` | Kiểm tra giao diện khi không có Figma và use case: sáng và tối, desktop và mobile, theo bộ quy chuẩn AI tự đặt. Ghi `ui-audit/<screen>/report.md`. Không cần UI |
 | `/heal-locator <feature> <id>` | Đọc lỗi Playwright của spec fail, mở trang bằng agent-browser, ghi `heal/<id>.diff` (chỉ đổi dòng locator) và `heal/<id>.md` (lý do) vào đợt |
 
 Chi tiết từng skill: [skills.md](./skills.md). Hướng dẫn từng bước cho tester: [tester-guide.md](./tester-guide.md).

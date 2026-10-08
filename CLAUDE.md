@@ -7,7 +7,7 @@
 
 ## Lệnh của tool
 - Mọi script gọi qua `npm run cli -- <lệnh>`. Không chạy file trong `tool/` trực tiếp, không tự viết script xử lý ảnh hay phiên
-- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
+- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
 - Chạy spec Playwright chỉ bằng `npm run cli -- run-spec`. KHÔNG chạy `npx playwright test` trong shell của bạn: log và `playwright-results.json` chỉ được che credential khi đi qua lệnh này
 - Schema mọi file dùng chung: `docs/schemas.md`
 
@@ -61,6 +61,14 @@
 ## Đối chiếu Figma
 - Dùng skill ui-check; ảnh thiết kế ở features/<feature>/figma/<screen>.png
 - Thiếu ảnh Figma cho màn nào thì báo tester, không tự bỏ qua âm thầm
+
+## Kiểm tra giao diện không cần Figma
+- Dùng skill `ui-audit` (`/ui-audit <url | feature> [screen]`). Tester có thể chỉ chat, không mở UI
+- Chưa có tính năng: `npm run cli -- feature-init --feature <f> --url <url>`. Khai báo `theme` trong feature.json trước khi đo
+- Đo và chụp chỉ bằng `npm run cli -- audit --feature <f>`. Kết quả ở `<đợt>/ui-audit/<screen>/`
+- Được bấm thử link nghi lỗi bằng agent-browser (session `ui-audit-<f>`). Không điền form, không gửi dữ liệu
+- Quy chuẩn: `features/<f>/ui-audit-standards.md` nếu có, không thì `.claude/skills/ui-audit/references/standards.md`
+- `report.md` để trống mục "Quyết định của tester"
 
 ## Healing
 - Dùng skill `heal-locator` (`/heal-locator <feature> <id>`). Nhắc tester phân loại trước: bug thật, locator hỏng hay UI đổi có chủ đích

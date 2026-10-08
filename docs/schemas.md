@@ -19,6 +19,7 @@ Quy ước chung:
 | `viewport.width` | số nguyên > 0 | có | Chiều rộng viewport. Cũng là kích thước ảnh Figma |
 | `viewport.height` | số nguyên > 0 | có | Chiều cao viewport |
 | `screens` | object | có | Key là tên screen, giá trị là object bên dưới |
+| `theme` | object | không | Cách trang đổi theme sáng và tối, dùng cho lệnh `audit`. Xem bên dưới |
 
 Mỗi screen:
 
@@ -43,6 +44,17 @@ Ví dụ:
   }
 }
 ```
+
+Trường `theme`:
+
+| Trường | Kiểu | Mặc định | Mô tả |
+| --- | --- | --- | --- |
+| `method` | `localStorage`, `media`, `none` | bắt buộc | `localStorage`: tool ghi `key` trước khi trang chạy script. `media`: trang theo `prefers-color-scheme`. `none`: chỉ một theme |
+| `key` | chuỗi | bắt buộc khi `localStorage` | Tên khóa trong `localStorage` |
+| `light`, `dark` | chuỗi | `light`, `dark` | Giá trị ghi vào `key` cho từng theme |
+| `toggle` | selector CSS | không | Nút đổi theme. Có thì `audit` bấm thử và kiểm tra theme được nhớ sau khi tải lại |
+
+Ví dụ: `"theme": { "method": "localStorage", "key": "theme", "toggle": "[data-testid=\"theme-toggle\"]" }`
 
 ## `features/<feature>/testcases.json`
 
@@ -219,6 +231,22 @@ Do tool ghi sau khi `npx playwright test <spec> --update-snapshots` thoát với
 | `run` | chuỗi | Tên đợt |
 | `tester` | chuỗi | Tên tester lấy từ frontmatter `summary.md` của đợt, rỗng nếu chưa điền |
 | `backup` | chuỗi hoặc `null` | Thư mục sao lưu `tests/__screenshots__/<feature>/` trước lần chạy, `<đợt>/baseline-backup/<thời điểm>/`, tương đối với gốc project. `null` khi trước đó chưa có ảnh nào. `--update-snapshots` chạy cả spec, nên sau lần chạy tool khôi phục mọi ảnh trừ `<screen>.png` về bản sao và xóa ảnh mới của screen khác (chưa được tester duyệt). Lần chạy lỗi thì khôi phục cả `<screen>.png` |
+
+## `<đợt>/ui-audit/<screen>/checks.json`
+
+Lệnh `audit` ghi. Skill `ui-audit` đọc và viết `report.md` cùng thư mục.
+
+| Trường | Mô tả |
+| --- | --- |
+| `url`, `audited_at`, `theme`, `viewports` | Trang đã kiểm tra, thời điểm, cấu hình theme, danh sách viewport |
+| `variants[]` | Mỗi tổ hợp viewport và theme: `shown_theme` (theme nhìn thấy, đoán theo độ sáng nền), `screenshot`, `viewport_shots`, `checks`, `console`, `page_errors`, `failed_requests`, `warnings` |
+| `variants[].checks` | `page` (kích thước, `horizontal_scroll`), `contrast` (`checked`, `skipped_on_image`, `failures`, `items`), `overflow`, `images` (`broken`, `missing_alt`), `headings` (`h1`, `skips`), `links` (`no_target`, `bad_rel`, `unnamed_controls`), `floating` (phần tử fixed hoặc sticky), `light_blocks_in_dark` |
+| `theme_toggle` | Trạng thái trước khi bấm, sau khi bấm, sau khi tải lại. `switched`, `remembered`. `null` khi không khai báo `toggle` |
+| `os_dark_preference` | Theme hiển thị khi hệ điều hành chọn tối và chưa chọn theme trên trang. `null` khi `method` là `media` hoặc `none` |
+| `review_images` | Ảnh sáng và tối cạnh nhau ở `review/<viewport>-NN.png` |
+| `warnings` | Thiếu theme, thiếu phiên đăng nhập |
+
+Cùng thư mục: `shots/<viewport>-<theme>.png` (toàn trang, chụp từng khúc rồi ghép nên không bị giới hạn 16384px), `shots/<viewport>-<theme>-top.png` và `-bottom.png` (một màn hình ở đầu và cuối trang), `probe/NN.png` (ảnh skill chụp khi thử link), `report.md` (skill viết). Chạy lại vào cùng đợt thì `shots/` và `review/` bị thay, `report.md` giữ nguyên.
 
 ## `<đợt>/summary.md`
 

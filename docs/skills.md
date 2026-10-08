@@ -48,6 +48,16 @@ Thứ tự locator: `getByRole` có name, `getByLabel`, `getByPlaceholder`, `get
 | Điều cấm | Chụp hoặc so ảnh. Ghi đè `report.md` khi chưa được đồng ý. Sửa `decisions.json`. Coi pixel diff là tiêu chí đạt |
 | Lệnh CLI | Không gọi lệnh `npm run cli` nào. Tool chạy `capture` và `compare` qua UI |
 
+## ui-audit
+
+| | |
+| --- | --- |
+| Lệnh | `/ui-audit <url hoặc feature> [screen]` |
+| Đầu vào | URL hoặc `features/<f>/feature.json`. Không cần Figma, không cần use case. Quy chuẩn: `.claude/skills/ui-audit/references/standards.md`, hoặc `features/<f>/ui-audit-standards.md` nếu tester viết |
+| Đầu ra | `<đợt>/ui-audit/<screen>/report.md` với bảng quy chuẩn và bảng sai khác đề xuất, mục "Quyết định của tester" để trống |
+| Điều cấm | Kết luận ĐẠT hay KHÔNG ĐẠT. Gửi form, đăng nhập, tạo dữ liệu trên site. Tự viết script đo thay cho lệnh `audit` |
+| Lệnh CLI | `feature-init` (khi chưa có tính năng), `audit`. Thử link nghi lỗi bằng agent-browser, session `ui-audit-<f>` |
+
 ## heal-locator
 
 | | |

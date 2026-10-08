@@ -2,8 +2,24 @@
   "feature": "bizfly-home",
   "service": "Bizfly Cloud homepage (staging)",
   "baseURL": "https://staging-home.bizflycloud.vn",
-  "viewport": { "width": 1440, "height": 900 },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
   "screens": {
-    "home": { "path": "/", "auth": false, "mask": [], "scale": 1, "wait_for": [] }
+    "home": {
+      "path": "/",
+      "auth": false,
+      "mask": [],
+      "scale": 1,
+      "wait_for": []
+    }
+  },
+  "theme": {
+    "method": "localStorage",
+    "key": "theme",
+    "light": "light",
+    "dark": "dark",
+    "toggle": "[data-testid=\"theme-toggle\"]"
   }
 }

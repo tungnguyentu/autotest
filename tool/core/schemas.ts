@@ -15,6 +15,23 @@ export const ScreenSchema = z.object({
   wait_for: z.array(z.string().min(1)).default([]),
 });
 
+/**
+ * Cách trang đổi theme sáng và tối, dùng cho lệnh `audit`.
+ * - `localStorage`: tool ghi `key` = giá trị `light` hoặc `dark` trước khi trang chạy script.
+ * - `media`: trang theo `prefers-color-scheme` của hệ điều hành.
+ * - `none`: trang chỉ có một theme.
+ */
+export const ThemeSchema = z
+  .object({
+    method: z.enum(["localStorage", "media", "none"]),
+    key: z.string().min(1).optional(),
+    light: z.string().min(1).default("light"),
+    dark: z.string().min(1).default("dark"),
+    /** Selector nút đổi theme. Có thì `audit` bấm thử và kiểm tra theme được nhớ sau khi tải lại. */
+    toggle: z.string().min(1).optional(),
+  })
+  .refine((t) => t.method !== "localStorage" || t.key, { message: "method localStorage cần key", path: ["key"] });
+
 export const FeatureSchema = z.object({
   feature: z
     .string()
@@ -27,6 +44,7 @@ export const FeatureSchema = z.object({
     height: z.number().int().positive(),
   }),
   screens: z.record(z.string().regex(KEY, "key screen chỉ dùng chữ, số, - và _"), ScreenSchema),
+  theme: ThemeSchema.optional(),
 });
 
 // ---------- testcases.json ----------
@@ -234,6 +252,7 @@ export const SummaryFrontmatterSchema = z.object({
 // ---------- kiểu và hàm kiểm tra ----------
 
 export type Feature = z.infer<typeof FeatureSchema>;
+export type Theme = z.infer<typeof ThemeSchema>;
 export type TestCase = z.infer<typeof TestCaseSchema>;
 export type AiRun = z.infer<typeof AiRunSchema>;
 export type AiRunStep = z.infer<typeof AiRunStepSchema>;
