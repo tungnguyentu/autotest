@@ -19,6 +19,10 @@ describe("cài đặt headless", () => {
     writeSettings({ playwright: { headless: false } }, { root });
     assert.equal(resolveHeadless(undefined, { root, env: {} }), false);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, "settings.local.json"), "utf8")), { playwright: { headless: false } });
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, "agent-browser.json"), "utf8")), { headed: true });
+    fs.writeFileSync(path.join(root, "agent-browser.json"), JSON.stringify({ headed: true, hideScrollbars: false }));
+    writeSettings({ playwright: { headless: true } }, { root });
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, "agent-browser.json"), "utf8")), { headed: false, hideScrollbars: false });
   });
 
   it("thứ tự ưu tiên: cờ dòng lệnh > HEADLESS > file", () => {

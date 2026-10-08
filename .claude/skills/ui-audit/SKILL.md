@@ -23,7 +23,7 @@ Phần đo và chụp do lệnh `npm run cli -- audit` làm. Skill này chuẩn 
   ```bash
   npm run cli -- feature-init --feature <tên> --url <url> [--screen <key>] [--auth]
   ```
-  Thêm `--auth` khi trang cần đăng nhập. Trang cần đăng nhập mà chưa có `auth/<tên>.json`: dừng, nhờ tester chạy `npm run cli -- login --feature <tên>` rồi gọi lại skill.
+  Thêm `--auth` khi trang cần đăng nhập. Trang cần đăng nhập mà chưa có `auth/<tên>.json`: làm quy trình đăng nhập qua chat trong `CLAUDE.md` (mục "Tester chỉ chat"), rồi làm tiếp.
 - Người dùng đưa tên tính năng: đọc `features/<tên>/feature.json`. Không có thì hỏi URL.
 
 ### 2. Khai báo cách đổi theme
@@ -55,7 +55,7 @@ Lệnh tạo đợt mới, in đường dẫn, rồi in tóm tắt từng tổ h
 | `shots/<viewport>-<theme>.png` | Ảnh toàn trang kích thước thật |
 | `shots/<viewport>-<theme>-top.png`, `-bottom.png` | Một màn hình ở đầu và cuối trang, thấy nút nổi và header dính |
 
-Có dòng `CẢNH BÁO` về theme (yêu cầu tối mà trang hiển thị sáng): sửa `theme` trong `feature.json` rồi chạy lại. Bị chuyển hướng tới trang đăng nhập: dừng, nhờ tester đăng nhập lại.
+Có dòng `CẢNH BÁO` về theme (yêu cầu tối mà trang hiển thị sáng): sửa `theme` trong `feature.json` rồi chạy lại. Bị chuyển hướng tới trang đăng nhập: phiên hết hạn, làm quy trình đăng nhập qua chat trong `CLAUDE.md` (mục "Tester chỉ chat"), rồi chạy lại.
 
 ### 4. Xem ảnh bằng mắt
 

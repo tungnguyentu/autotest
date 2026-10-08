@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import readline from "node:readline";
 import { chromium } from "playwright";
 import { readFeature } from "./feature-store.ts";
@@ -73,7 +74,7 @@ export async function login(options: LoginOptions): Promise<LoginResult> {
     log("[login] Hoàn tất SSO, OTP, captcha. Khi đã vào được hệ thống thì lưu phiên.");
     log(
       options.waitFlag
-        ? `[login] Lưu phiên: bấm nút Lưu trên UI hoặc bấm Enter tại terminal này.`
+        ? `[login] Lưu phiên: bấm Enter tại terminal này, hoặc tạo file ${path.relative(process.cwd(), flag)} (Claude tạo khi bạn báo đã đăng nhập xong).`
         : `[login] Lưu phiên: bấm Enter tại terminal này (Ctrl+C để hủy).`,
     );
 

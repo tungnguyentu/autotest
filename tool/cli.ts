@@ -43,10 +43,14 @@ Lệnh:
       mỗi theme trong feature.json (sáng, tối). Ghi <đợt>/ui-audit/<screen>/shots/, review/ (ảnh sáng và tối
       cạnh nhau để xem) và checks.json (tương phản, tràn ngang, ảnh, tiêu đề, link, console, request lỗi,
       nút đổi theme). Không có --run-dir thì tạo đợt mới. Chỉ đo, không kết luận.
+  usecase-add --feature <f> --file <đường dẫn .md hoặc .docx> [--name <tên file mới>]
+      Thêm use case vào features/<f>/usecases/. File Word được chuyển sang .md, ảnh tách ra <tên>.images/,
+      giữ file gốc. Không ghi đè file có sẵn.
   settings [--headless true|false]
       Xem hoặc đổi cài đặt trên máy này (settings.local.json, không commit).
-      --headless false: Playwright mở cửa sổ trình duyệt cho mọi lệnh chụp, đo và chạy spec.
-      Cờ --headed hoặc --headless của từng lệnh và biến HEADLESS=true|false ưu tiên hơn file này.
+      --headless false: mở cửa sổ trình duyệt cho Playwright (chụp, đo, chạy spec) và agent-browser
+      (đồng bộ vào agent-browser.json). Session agent-browser đang mở giữ chế độ cũ đến khi đóng.
+      Với Playwright, cờ --headed hoặc --headless của từng lệnh và biến HEADLESS=true|false ưu tiên hơn file này.
   run-spec --feature <f> --id <TC> [--run-dir <d>]
       Chạy tests/<f>/<TC>.spec.ts qua runner của tool, in log đã che credential và ghi kết quả vào <đợt>/playwright-last.json.
       Dùng lệnh này thay cho "npx playwright test". Mã thoát 2 khi spec fail.
@@ -191,6 +195,28 @@ async function main(argv: string[]): Promise<number> {
       }
       return broken ? 2 : 0;
     }
+    case "usecase-add": {
+      const { values } = parseArgs({ args: rest, options: { feature: { type: "string" }, file: { type: "string" }, name: { type: "string" } } });
+      const feature = requireFeature(values.feature);
+      if (!values.file) throw new UsageError("Thiếu --file <đường dẫn file use case>.");
+      const src = path.resolve(values.file);
+      if (!fs.existsSync(src) || !fs.statSync(src).isFile()) throw new UsageError(`Không thấy file: ${src}`);
+      const { readFeature } = await import("./core/feature-store.ts");
+      const { addDocxUsecase, addMarkdownUsecase, usecasesDir } = await import("./core/usecase-store.ts");
+      readFeature(feature);
+      const name = values.name ?? path.basename(src);
+      if (/\.docx$/i.test(name)) {
+        const r = await addDocxUsecase(feature, name, fs.readFileSync(src));
+        console.log(`Đã thêm ${path.join(usecasesDir(feature), r.converted)} (chuyển từ ${name}${r.images ? `, ${r.images} ảnh trong ${r.converted.slice(0, -3)}.images/` : ""})`);
+        for (const w of r.warnings) console.log(`  CẢNH BÁO chuyển đổi: ${w}`);
+      } else if (/\.md$/i.test(name)) {
+        addMarkdownUsecase(feature, name, fs.readFileSync(src, "utf8"));
+        console.log(`Đã thêm ${path.join(usecasesDir(feature), name)}`);
+      } else {
+        throw new UsageError(`"${name}" không phải .md hoặc .docx. File .doc cũ: mở bằng Word, lưu lại dạng .docx.`);
+      }
+      return 0;
+    }
     case "settings": {
       const { values } = parseArgs({ args: rest, options: { headless: { type: "string" } } });
       const { readSettings, writeSettings, settingsPath, parseBool, resolveHeadless } = await import("./core/settings.ts");
@@ -206,7 +232,8 @@ async function main(argv: string[]): Promise<number> {
       }
       console.log(JSON.stringify(settings, null, 2));
       const effective = resolveHeadless(undefined);
-      console.log(`Playwright đang chạy: ${effective ? "ẩn (headless)" : "mở cửa sổ (headed)"}${process.env.HEADLESS?.trim() ? " theo biến HEADLESS" : ""}`);
+      console.log(`Playwright: ${effective ? "chạy ẩn (headless)" : "mở cửa sổ (headed)"}${process.env.HEADLESS?.trim() ? " theo biến HEADLESS" : ""}`);
+      console.log(`agent-browser: ${settings.playwright.headless ? "chạy ẩn" : "mở cửa sổ"} (session đang mở giữ chế độ cũ đến khi đóng)`);
       return 0;
     }
     case "evidence-dir": {

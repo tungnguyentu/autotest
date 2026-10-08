@@ -158,7 +158,7 @@ async function auditVariant(browser: Browser, feature: Feature, url: string, wai
 
     v.final_url = publicUrl(page.url());
     if (trimSlash(page.url().split(/[?#]/)[0]!) !== trimSlash(url.split(/[?#]/)[0]!)) {
-      v.warnings.push(`Bị chuyển hướng tới ${v.final_url}. Nếu là trang đăng nhập: nhờ tester chạy lại lệnh login.`);
+      v.warnings.push(`Bị chuyển hướng tới ${v.final_url}. Nếu là trang đăng nhập: phiên hết hạn, cần tester đăng nhập lại (lệnh login).`);
     }
     v.checks = (await page.evaluate(CHECKS_SRC)) as Record<string, unknown>;
     v.shown_theme = v.checks.shown_theme as string;
@@ -253,7 +253,7 @@ export async function auditScreens(opts: AuditOptions): Promise<AuditResult[]> {
       if (screen.auth) {
         const state = authFile(opts.feature, opts);
         if (!fs.existsSync(state)) {
-          result.warnings.push(`Thiếu ${rel(root, state)}. Nhờ tester chạy: npm run cli -- login --feature ${opts.feature}`);
+          result.warnings.push(`Thiếu ${rel(root, state)}. Cần tester đăng nhập tay: npm run cli -- login --feature ${opts.feature} --wait-flag`);
           writeJsonAtomic(path.join(dir, "checks.json"), result);
           results.push(result);
           continue;

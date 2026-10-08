@@ -271,9 +271,11 @@ Cài đặt riêng trên máy tester, ở thư mục gốc project. Không commi
 
 | Trường | Kiểu | Mặc định | Mô tả |
 | --- | --- | --- | --- |
-| `playwright.headless` | boolean | `true` | `true`: Playwright chạy ẩn. `false`: mở cửa sổ trình duyệt để xem. Áp dụng cho `capture`, `audit`, `check-session`, spec và regression. Lệnh `login` luôn mở cửa sổ |
+| `playwright.headless` | boolean | `true` | `true`: chạy ẩn. `false`: mở cửa sổ trình duyệt để xem. Áp dụng cho `capture`, `audit`, `check-session`, spec, regression, và agent-browser. Lệnh `login` luôn mở cửa sổ |
 
-Thứ tự ưu tiên: cờ `--headed` hoặc `--headless` của lệnh, rồi biến môi trường `HEADLESS=true|false`, rồi file này.
+Thứ tự ưu tiên với Playwright: cờ `--headed` hoặc `--headless` của lệnh, rồi biến môi trường `HEADLESS=true|false`, rồi file này.
+
+Lệnh `settings` ghi thêm `headed` vào `agent-browser.json` ở thư mục gốc (cũng không commit). agent-browser tự đọc file này khi chạy từ thư mục gốc. Các khóa khác trong file được giữ nguyên. Session agent-browser đang mở giữ chế độ cũ đến khi đóng.
 
 ## `auth/<feature>.json` và `auth/<feature>.meta.json`
 

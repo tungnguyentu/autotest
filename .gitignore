@@ -16,3 +16,4 @@ playwright-report/
 
 # Cài đặt riêng của từng máy (npm run cli -- settings)
 settings.local.json
+agent-browser.json

@@ -46,7 +46,7 @@ Thư mục đợt là thư mục chứa file đó. Đọc:
 - `RUN/playwright-results.json` (`error.message`, `error.location.line` của test thuộc `ID.spec.ts`). Tool đã che credential trong file này và trong log ngay sau lần chạy. Không mở `RUN/playwright-report/` và `RUN/test-results/` (trace, report có thể chứa giá trị đã nhập)
 - `features/F/feature.json` (baseURL, viewport, đường dẫn các screen)
 
-Dừng, báo tester, không tạo diff, nếu: không có spec, hoặc `playwright-last.json` không ghi `ID.spec.ts` fail, hoặc log đã bị lần chạy khác ghi đè (spec không còn trong log). Nhờ tester chạy lại spec trên UI rồi gõ lại lệnh.
+Dừng, báo tester, không tạo diff, nếu: không có spec, hoặc `playwright-last.json` không ghi `ID.spec.ts` fail, hoặc log đã bị lần chạy khác ghi đè (spec không còn trong log). Chạy lại spec bằng `npm run cli -- run-spec --feature F --id ID --run-dir <đợt>` rồi làm lại từ đầu.
 
 ### 2. Xác định locator hỏng
 

@@ -17,7 +17,7 @@ ls -dt "${EVIDENCE_ROOT:-evidence}"/????-??-??_<feature>/ai-run/<id>.json "${EVI
 
 Đọc file đó và test case `<id>` trong `features/<feature>/testcases.json`. Dừng, không sinh spec, nếu:
 
-- Không có `ai-run/<id>.json`: nhờ tester chạy `/run-testcase <feature> <id>`.
+- Không có `ai-run/<id>.json`: đề nghị tester cho chạy thử trước (skill `run-testcase`).
 - `tester.decision` khác `"confirmed"` (còn `null` hoặc `"rejected"`): nói rõ tester cần xác nhận kết quả AI chạy thử trước. Không tự sửa `tester` trong file để vượt qua điều kiện này.
 - `ai_result` là `null`, hoặc `ai_result.verdict` là `KHÔNG XÁC ĐỊNH` mà tester chưa ghi lý do chấp nhận trong `tester.note`.
 - `ai_result.verdict` là `KHÔNG ĐẠT` (tester xác nhận đó là bug): hỏi tester có muốn chuyển không, vì spec sẽ fail cho tới khi lỗi được sửa.
@@ -46,7 +46,7 @@ npm run cli -- run-spec --feature <feature> --id <id> --run-dir <đợt chứa a
 
 - Fail: đọc lỗi. Nếu do locator chuyển sai (strict mode violation, sai tên role, sai `exact`), sửa locator và chạy lại tối đa hai lần. Nếu fail do assertion hoặc hành vi hệ thống khác với lúc AI chạy thử, dừng và báo tester kèm thông báo lỗi. Không nới, không xóa, không đổi giá trị mong đợi trong assertion để ép pass.
 - Pass: báo pass. Không cập nhật snapshot (`--update-snapshots`), không tạo baseline.
-- Phiên hết hạn (về trang đăng nhập): dừng, nhờ tester chạy `npm run cli -- login --feature <feature>`.
+- Phiên hết hạn (về trang đăng nhập): dừng, làm quy trình đăng nhập qua chat trong `CLAUDE.md` (mục "Tester chỉ chat").
 
 ### 4. Báo cáo cho tester
 

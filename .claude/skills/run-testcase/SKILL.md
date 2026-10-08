@@ -34,7 +34,7 @@ agent-browser --session S [--state auth/F.json] open about:blank
 agent-browser --session S set viewport <w> <h>
 ```
 
-Thêm `--state auth/F.json` chỉ khi `run-start` báo có phiên. Tính năng có screen cần đăng nhập mà chưa có phiên: dừng, nhờ tester chạy `npm run cli -- login --feature F`.
+Thêm `--state auth/F.json` chỉ khi `run-start` báo có phiên. Tính năng có screen cần đăng nhập mà chưa có phiên: dừng, làm quy trình đăng nhập qua chat trong `CLAUDE.md` (mục "Tester chỉ chat").
 
 ### 3. Thực hiện từng bước của test case
 
@@ -78,7 +78,7 @@ Mỗi `expected` cần một đánh giá riêng: `ĐẠT`, `KHÔNG ĐẠT` hoặ
 
 ### 5. Gặp đăng nhập, OTP, captcha thì dừng
 
-Nếu snapshot hoặc URL cho thấy trang đăng nhập, SSO, ô OTP hoặc captcha khi test case không yêu cầu đó (phiên hết hạn, bị chuyển hướng): dừng ngay, không điền, không vượt. Viết file kết quả với `verdict` `KHÔNG XÁC ĐỊNH` và lý do "CẦN TESTER ĐĂNG NHẬP LẠI", rồi sang bước 6. Nhắc tester chạy `npm run cli -- login --feature F`.
+Nếu snapshot hoặc URL cho thấy trang đăng nhập, SSO, ô OTP hoặc captcha khi test case không yêu cầu đó (phiên hết hạn, bị chuyển hướng): dừng ngay, không điền, không vượt. Viết file kết quả với `verdict` `KHÔNG XÁC ĐỊNH` và lý do "CẦN TESTER ĐĂNG NHẬP LẠI", rồi sang bước 6. Đề nghị tester đăng nhập lại theo quy trình đăng nhập qua chat trong `CLAUDE.md`.
 
 ### 6. Kết thúc
 

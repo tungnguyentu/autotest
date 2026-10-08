@@ -1,26 +1,19 @@
 # Hướng dẫn cho tester
 
-Tài liệu này dành cho người không đọc code. Làm theo thứ tự. Mỗi bước ghi rõ làm ở đâu, gõ lệnh gì, kết quả nằm ở file nào.
+Bạn chỉ chat với Claude Code. Bạn không cần gõ lệnh, không cần mở giao diện web. Claude chạy mọi lệnh, bạn đọc kết quả và quyết định.
 
 ## 1. Cài đặt (làm một lần)
 
-1. Cài Node 26 trở lên. Kiểm tra: `node --version`.
-2. Tải project và cài thư viện:
+1. Cài Node 26 trở lên, git, và Claude Code. Đăng nhập Claude Code bằng tài khoản của bạn.
+2. Mở Claude Code ở thư mục bạn muốn để project, rồi chat:
 
-   ```bash
-   git clone https://github.com/tungnguyentu/autotest.git
-   cd autotest
-   npm install
-   npx playwright install chromium
+   ```
+   Clone https://github.com/tungnguyentu/autotest.git, cài đặt theo docs/tester-guide.md
    ```
 
-3. Cài agent-browser (công cụ để AI mở trình duyệt). Với `/ui-audit`, agent-browser chỉ cần khi AI bấm thử link nghi lỗi. Kiểm tra: `agent-browser --version`. Chưa có thì cài theo hướng dẫn của agent-browser, bản đang dùng là 0.34.
-4. Cài Claude Code và đăng nhập bằng tài khoản của bạn. Mở Claude Code ngay trong thư mục project này. Skill nằm ở `.claude/skills/`, Claude Code tự nhận.
-5. Giao diện web (`npm start`, http://localhost:4173) đang tạm dừng phát triển. Dùng chat với Claude Code như mục 3.
-
-Cổng 4173 bận thì `npm start` in ra tiến trình đang giữ cổng. Dừng tiến trình đó rồi chạy lại. Tool không tự đổi cổng.
-
-6. Muốn nhìn thấy trình duyệt khi tool chụp, đo hay chạy spec: `npm run cli -- settings --headless false`. Chạy ẩn lại (nhanh hơn): `npm run cli -- settings --headless true`. Cũng có thể nói với Claude: "chạy có mở trình duyệt". Cài đặt lưu ở `settings.local.json`, chỉ có trên máy bạn.
+   Claude tải project, chạy `npm install` và cài trình duyệt Chromium cho Playwright.
+3. Thoát Claude Code, mở lại ngay trong thư mục `autotest`. Từ lúc này Claude đọc được quy tắc của project và các skill.
+4. agent-browser (trình duyệt AI dùng khi chạy thử test case và bấm thử link): nhờ Claude kiểm tra đã cài chưa. Bản đang dùng là 0.34.
 
 ## 2. Bảo mật: đọc trước khi làm
 
@@ -31,24 +24,29 @@ Cổng 4173 bận thì `npm start` in ra tiến trình đang giữ cổng. Dừn
 - Report HTML (`<đợt>/playwright-report/`) và trace (`<đợt>/test-results/**/trace.zip`) do Playwright tự ghi, tool không che được. Nếu spec nạp credential từ `process.env` (ví dụ `fill(process.env.USER_PASSWORD!)`), report và trace có thể chứa giá trị đã nhập. Đừng gửi hai thư mục này đi, đừng dán nội dung vào chat, đừng cho AI mở chúng. `playwright-log.txt` và `playwright-results.json` thì tool đã che.
 - Ảnh chụp từng step và ảnh so Figma không che giá trị ô nhập không phải mật khẩu, ví dụ email hay tên tài khoản test. Đây là quyết định có chủ đích (2026-10-07). Mật khẩu luôn đi qua `fill-secret` và ô mật khẩu hiển thị dạng ẩn.
 
-## 3. Kiểm tra giao diện bằng chat (không cần Figma, không cần use case)
+## 3. Việc bạn nói với Claude
 
-1. Mở Claude Code trong thư mục project.
-2. Gõ lệnh, ví dụ:
+| Bạn muốn | Nói với Claude, ví dụ |
+| --- | --- |
+| Kiểm tra giao diện một trang, không có Figma và use case | "Test giao diện https://staging-home.bizflycloud.vn/ ở chế độ sáng và tối, xem có lỗi gì không" hoặc `/ui-audit <url>` |
+| Nhìn thấy trình duyệt khi AI làm việc | "Mở trình duyệt khi chạy". Muốn chạy ẩn lại (nhanh hơn): "Chạy ẩn trình duyệt" |
+| Đưa use case (file Word D5) | Kéo file vào chat hoặc gửi đường dẫn: "Thêm use case này cho tính năng X: /Users/.../D5.docx" |
+| Sinh test case từ use case | "Sinh test case cho tính năng X" |
+| Đăng nhập trang cần SSO, OTP | "Đăng nhập tính năng X". Claude mở cửa sổ trình duyệt, bạn đăng nhập trên đó, xong thì trả lời "xong" |
 
-   ```
-   /ui-audit https://staging-home.bizflycloud.vn/
-   ```
+Không gửi mật khẩu, mã OTP hay cookie vào chat. Bạn chỉ nhập chúng trên cửa sổ trình duyệt. Lỡ gửi thì đổi mật khẩu.
 
-   Hoặc nói thường: "test giao diện trang https://... ở chế độ sáng và tối, xem có lỗi gì không".
-3. Claude tạo tính năng, tìm cách trang đổi theme, chạy đo và chụp ở desktop và mobile, xem ảnh, thử các link nghi lỗi. Mất khoảng 3 đến 5 phút một trang.
-4. Mở `evidence/<ngày>_<tính năng>/ui-audit/<screen>/report.md`:
-   - Mục "Quy chuẩn": AI tự đặt. Gạch dòng không áp dụng. Muốn đổi hẳn cho tính năng này: chép `.claude/skills/ui-audit/references/standards.md` sang `features/<tính năng>/ui-audit-standards.md` rồi sửa.
-   - Mục "Sai khác đề xuất": mỗi dòng có mức, bằng chứng (ảnh trong `review/` hoặc `shots/`, số đo trong `checks.json`). Đối chiếu ảnh trước khi tin.
-   - Mục "Quyết định của tester": bạn điền.
-5. Trang cần đăng nhập: chạy `npm run cli -- login --feature <tính năng>`, đăng nhập tay, bấm Enter, rồi gọi lại `/ui-audit`.
+### Đọc kết quả kiểm tra giao diện
+
+Claude mất khoảng 3 đến 5 phút một trang, rồi gửi đường dẫn `evidence/<ngày>_<tính năng>/ui-audit/<screen>/report.md`. Mở file đó:
+
+- Mục "Quy chuẩn": AI tự đặt. Gạch dòng không áp dụng. Muốn đổi hẳn cho một tính năng: nói với Claude "dùng bộ quy chuẩn riêng cho tính năng X, bỏ Q8".
+- Mục "Sai khác đề xuất": mỗi dòng có mức và bằng chứng (ảnh trong `review/` hoặc `shots/`, số đo trong `checks.json`). Đối chiếu ảnh trước khi tin.
+- Mục "Quyết định của tester": bạn điền.
 
 ## 4. Quy trình sáu giai đoạn (cần UI, đang tạm dừng)
+
+Phần từ đây trở xuống mô tả quy trình trên giao diện web, đang tạm dừng. Các bước duyệt (đổi test case sang `reviewed`, xác nhận kết quả AI, áp dụng healing, tạo baseline) chưa làm được qua chat.
 
 Có hai điểm duyệt bắt buộc. AI chỉ đề xuất, bạn quyết định.
 

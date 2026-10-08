@@ -9,7 +9,7 @@ export const SETTINGS_FILE = "settings.local.json";
 export const SettingsSchema = z.object({
   playwright: z
     .object({
-      /** true: chạy ẩn trình duyệt. false: mở cửa sổ trình duyệt để tester xem. */
+      /** true: chạy ẩn trình duyệt. false: mở cửa sổ trình duyệt để tester xem. Áp dụng cho Playwright và agent-browser. */
       headless: z.boolean().default(true),
     })
     .default({ headless: true }),
@@ -33,8 +33,27 @@ export function readSettings(opts?: PathOptions): Settings {
   return parsed.data;
 }
 
+/** Cấu hình agent-browser cấp project. agent-browser tự đọc file này khi chạy từ thư mục gốc project. */
+export const AGENT_BROWSER_CONFIG = "agent-browser.json";
+
+/**
+ * Ghi settings.local.json và đồng bộ `headed` sang agent-browser.json, để một cài đặt áp dụng cho cả
+ * Playwright và agent-browser. Giữ các khóa khác tester tự thêm vào agent-browser.json.
+ */
 export function writeSettings(settings: Settings, opts?: PathOptions): void {
-  fs.writeFileSync(settingsPath(opts), JSON.stringify(SettingsSchema.parse(settings), null, 2) + "\n");
+  const valid = SettingsSchema.parse(settings);
+  fs.writeFileSync(settingsPath(opts), JSON.stringify(valid, null, 2) + "\n");
+  const abFile = path.join(opts?.root ?? PROJECT_ROOT, AGENT_BROWSER_CONFIG);
+  let ab: Record<string, unknown> = {};
+  if (fs.existsSync(abFile)) {
+    try {
+      ab = JSON.parse(fs.readFileSync(abFile, "utf8"));
+    } catch {
+      throw new Error(`${AGENT_BROWSER_CONFIG} không phải JSON hợp lệ. Sửa hoặc xóa file rồi chạy lại.`);
+    }
+  }
+  ab.headed = !valid.playwright.headless;
+  fs.writeFileSync(abFile, JSON.stringify(ab, null, 2) + "\n");
 }
 
 function parseBool(value: string, name: string): boolean {

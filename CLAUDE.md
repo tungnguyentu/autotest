@@ -5,20 +5,34 @@
 - KHÔNG tự kết luận PASS/FAIL cuối, KHÔNG tự cập nhật baseline,
   KHÔNG tự đổi status sang automated
 
+## Tester chỉ chat
+- Tester không gõ lệnh, không mở UI (UI đang tạm dừng). Bạn chạy mọi lệnh thay tester và trả lời bằng tiếng Việt, ngắn
+- Chưa có `node_modules/`: chạy `npm install` và `npx playwright install chromium` trước khi làm việc khác
+- Tester nói "mở trình duyệt", "cho xem trình duyệt", "chạy có giao diện": `npm run cli -- settings --headless false`.
+  Nói "chạy ẩn", "tắt trình duyệt": `--headless true`. Áp dụng cho Playwright và agent-browser. Session agent-browser
+  đang mở giữ chế độ cũ: đóng session rồi mở lại. Không tự đổi khi tester không yêu cầu
+- Tester gửi file use case (.md, .docx của D5) hoặc đường dẫn file: `npm run cli -- usecase-add --feature <f> --file <đường dẫn>`
+- Đăng nhập qua chat (trang cần SSO, OTP, captcha):
+  1. Chạy nền `npm run cli -- login --feature <f> --wait-flag`. Lệnh mở cửa sổ trình duyệt trên máy tester
+  2. Nhắn tester: đăng nhập trên cửa sổ vừa mở, xong thì trả lời "xong". Không hỏi, không nhận mật khẩu hay OTP qua chat
+  3. Tester trả lời xong: tạo file rỗng `auth/<f>.save` (`touch`). Lệnh login tự lưu phiên, xóa file cờ rồi thoát
+  4. Kiểm tra: `npm run cli -- check-session --feature <f> --url <baseURL + path>`
+- Tester gửi mật khẩu hay OTP vào chat: không dùng, không lặp lại, nhắc tester đổi mật khẩu và đăng nhập trên cửa sổ trình duyệt
+- Skill nhắc thao tác "trên UI" mà chưa có lệnh tương ứng: nói rõ cho tester bước đó cần làm gì, không tự quyết thay tester
+
 ## Lệnh của tool
 - Mọi script gọi qua `npm run cli -- <lệnh>`. Không chạy file trong `tool/` trực tiếp, không tự viết script xử lý ảnh hay phiên
-- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `settings`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
+- Lệnh hiện có: `login`, `check-session`, `evidence-dir`, `feature-init`, `audit`, `settings`, `usecase-add`, `validate-testcases`, `run-start`, `record-step`, `fill-secret`, `run-finish`, `run-spec`, `capture`, `compare`, `start`. Xem `npm run cli -- help`
 - Chạy spec Playwright chỉ bằng `npm run cli -- run-spec`. KHÔNG chạy `npx playwright test` trong shell của bạn: log và `playwright-results.json` chỉ được che credential khi đi qua lệnh này
 - Schema mọi file dùng chung: `docs/schemas.md`
-- Playwright chạy ẩn hay mở cửa sổ theo `settings.local.json`. Tester muốn xem trình duyệt: `npm run cli -- settings --headless false`, chạy ẩn lại: `--headless true`. Không tự đổi khi tester không yêu cầu
 
 ## Tính năng, môi trường, đăng nhập
 - Luôn xác định <feature> trước khi làm; cấu hình ở features/<feature>/feature.json
-- Đăng nhập SSO/OTP/captcha do TESTER làm tay qua `npm run cli -- login --feature <feature>` -> auth/<feature>.json
-- KHÔNG tự vượt SSO/OTP/captcha. Thiếu hoặc hết phiên -> dừng, nhờ tester chạy lại lệnh `login`
+- Đăng nhập SSO/OTP/captcha do TESTER làm tay trên cửa sổ trình duyệt do lệnh `login` mở -> auth/<feature>.json
+- KHÔNG tự vượt SSO/OTP/captcha. Thiếu hoặc hết phiên -> làm quy trình đăng nhập qua chat ở mục "Tester chỉ chat"
 - Credential trong features/<feature>/.env (nếu có): KHÔNG in, KHÔNG đọc nội dung file, KHÔNG ghi vào report, log, spec
 - Điền credential chỉ qua lệnh `npm run cli -- fill-secret`. Bạn chỉ thấy tên biến, ví dụ `<secret:USER_EMAIL>`, không bao giờ thấy giá trị
-- Không đọc, không sao chép, không in `auth/` và `features/*/.env`
+- Không đọc, không sao chép, không in `auth/` và `features/*/.env`. Ngoại lệ duy nhất: tạo file cờ rỗng `auth/<f>.save` khi đăng nhập qua chat
 - Không dùng phiên/credential của tính năng này cho tính năng khác
 
 ## Evidence

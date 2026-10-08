@@ -11,7 +11,7 @@ Lệnh: `/gen-testcases <feature>`. Đầu ra là ĐỀ XUẤT ở trạng thái
 
 1. `CLAUDE.md` và `docs/schemas.md` (mục `testcases.json`).
 2. `features/<feature>/feature.json`: `service`, `baseURL`, các key trong `screens`.
-3. Mọi file `features/<feature>/usecases/*.md`. Không có file nào thì dừng, nhờ tester tải use case lên UI.
+3. Mọi file `features/<feature>/usecases/*.md`. Không có file nào thì nhờ tester gửi file use case (.md hoặc .docx, ví dụ tài liệu D5) hoặc đường dẫn file, rồi thêm bằng `npm run cli -- usecase-add --feature <feature> --file <đường dẫn>`.
    File .md có dòng đầu `<!-- Tool chuyển tự động từ <tên>.docx ... -->` là bản chuyển từ Word. Ảnh nằm ở `usecases/<tên>.images/` (link trong file đã mã hóa dấu cách và dấu tiếng Việt). Mở từng ảnh bằng công cụ đọc ảnh khi use case dựa vào ảnh, ví dụ màn hình mẫu hay sơ đồ luồng. Bảng có ô gộp giữ dạng HTML `<table>`. Không đọc file `.docx`, chỉ đọc file `.md`.
 4. `features/<feature>/testcases.json` nếu đã có.
 
